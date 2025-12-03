@@ -211,8 +211,6 @@ class MonitorConsumer:
             # Add fields (actual data values)
             if message['sensor_type'] == 'speed':
                 point.field('speed_kmh', float(message['speed_kmh']))
-                if 'raw_speed_kmh' in message:
-                    point.field('raw_speed_kmh', float(message['raw_speed_kmh']))
                 if 'sample_count' in message:
                     point.field('sample_count', int(message['sample_count']))
             
@@ -220,8 +218,6 @@ class MonitorConsumer:
                 point.field('temperature_c', float(message['temperature_c']))
                 point.field('humidity', float(message['humidity']))
                 point.tag('weather_conditions', message['weather_conditions'])
-                if 'raw_temperature_c' in message:
-                    point.field('raw_temperature_c', float(message['raw_temperature_c']))
                 if 'sample_count' in message:
                     point.field('sample_count', int(message['sample_count']))
             

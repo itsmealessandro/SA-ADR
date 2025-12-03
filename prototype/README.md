@@ -1,204 +1,98 @@
-# Emergency Management System - Prototype
+# Emergency Management System - City Simulator Prototype
 
-Sistema prototipale di gestione emergenze stradali basato su architettura a microservizi con Docker Compose.
+Prototipo di un sistema di gestione delle emergenze basato su architettura a microservizi, Docker Compose e pattern MAPE-K.
+Il sistema simula una città intelligente (L'Aquila) con sensori distribuiti, elaborazione edge e monitoraggio centralizzato.
 
-## Architettura
+## 🏗️ Architettura
 
-Il sistema è composto da:
+Il sistema è composto dai seguenti servizi Docker:
 
-- **3 Edge Simulators**: Simulano sensori di velocità, meteo e **camera** per 3 distretti (North, South, Center)
-- **Apache Kafka**: Event bus per comunicazione asincrona
-- **Monitor Python**: Consumer Kafka che valida e scrive su InfluxDB
-- **InfluxDB**: Database time-series per metriche sensori
+1.  **City Simulator (`ems-city`)**:
+    *   Simulatore unico per l'intera città basato su pattern **MAPE-K**.
+    *   Gestisce dinamicamente distretti ed edge caricati da `city_config.json`.
+    *   Ogni edge gira in un thread separato per simulare concorrenza reale.
+    *   Genera dati da sensori di **velocità**, **meteo** e **telecamere** (con edge analytics).
+    *   Pubblica i dati su Kafka.
 
-## Prerequisiti
+2.  **Monitor (`ems-monitor`)**:
+    *   Consuma i dati da Kafka.
+    *   Valida la struttura e i range dei valori.
+    *   Scrive le metriche su **InfluxDB** per storicizzazione e analisi.
 
-- Docker
-- Docker Compose
+3.  **Infrastruttura Dati**:
+    *   **Kafka & Zookeeper**: Message broker per la comunicazione asincrona e disaccoppiata.
+    *   **InfluxDB**: Database Time-Series per memorizzare le metriche dei sensori.
 
-## Avvio Rapido
+## 🌍 Configurazione Città (L'Aquila)
 
+La configurazione è definita in `city-simulator/city_config.json`.
+Attualmente sono configurati **3 Distretti** e **7 Edge**:
+
+*   **Centro Storico** (`district-centro`)
+    *   *Piazza Duomo Area*: 2 Speed, 1 Weather, 3 Camera
+    *   *Corso Vittorio Emanuele*: 1 Speed, 1 Weather, 2 Camera
+*   **Collemaggio** (`district-collemaggio`)
+    *   *Basilica Area*: 2 Speed, 1 Weather, 2 Camera
+    *   *Via Collemaggio*: 1 Speed, 1 Weather, 1 Camera
+    *   *Porta Bazzano*: 1 Speed, 1 Camera
+*   **Pettino** (`district-pettino`)
+    *   *University Area*: 2 Speed, 2 Weather, 2 Camera
+    *   *Via L'Aquila*: 2 Speed, 1 Weather, 2 Camera
+
+## 🚀 Quick Start
+
+### Prerequisiti
+*   Docker e Docker Compose installati.
+
+### Avvio
 ```bash
-# Avvia tutti i servizi
-docker-compose up -d
+cd prototype
+docker-compose up --build -d
+```
 
-# Verifica lo stato dei servizi
-docker-compose ps
+### Verifica
+Controlla i log del simulatore città:
+```bash
+docker-compose logs -f city-simulator
+```
 
-# Visualizza i log
-docker-compose logs -f
+Controlla i log del monitor:
+```bash
+docker-compose logs -f monitor-python
+```
 
-# Ferma tutti i servizi
+### Arresto
+```bash
 docker-compose down
-
-# Ferma e rimuove i volumi (cancella dati InfluxDB)
-docker-compose down -v
 ```
 
-## Verifica Funzionamento
+## 📊 Dati Sensori
 
-### 1. Verifica Topic Kafka
+Ogni messaggio inviato a Kafka include:
+*   `district_id`, `edge_id`, `sensor_type`
+*   `timestamp` (ISO 8601)
+*   `latitude`, `longitude` (Coordinate GPS dell'edge)
+*   Dati specifici del sensore (aggregati da più sensori fisici)
 
-```bash
-# Lista topics
-docker-compose exec kafka kafka-topics --list --bootstrap-server localhost:9092
+### Tipi di Sensori
 
-# Consuma messaggi dal topic (CTRL+C per uscire)
-docker-compose exec kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
-  --topic sensor-data \
-  --from-beginning
-```
+1.  **Speed Sensor**:
+    *   Simula rilevatori di velocità multipli.
+    *   Dati: `speed_kmh` (media aggregata), `sensor_readings` (dettaglio per sensore).
 
-### 2. Accedi a InfluxDB UI
+2.  **Weather Sensor**:
+    *   Simula stazioni meteo.
+    *   Dati: `temperature_c`, `humidity`, `weather_conditions`.
 
-Apri browser su: http://localhost:8086
+3.  **Camera Sensor (Edge Analytics)**:
+    *   Simula telecamere con elaborazione locale.
+    *   Rileva condizioni: `clear`, `congestion`, `accident`, `obstacles`, `flooding`.
+    *   Dati: `road_condition` (condizione più critica rilevata), `confidence_score`, `vehicle_count`.
 
-Credenziali:
-- Username: `admin`
-- Password: `adminpassword`
+## 🛠️ Sviluppo Modulare
 
-Organizzazione: `emergency-mgmt`
-Bucket: `sensor_metrics`
-
-### 3. Query Dati in InfluxDB
-
-Nella UI di InfluxDB, vai su "Data Explorer" e usa le seguenti query:
-
-```flux
-// Dati velocità ultimi 1h
-from(bucket: "sensor_metrics")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r._measurement == "sensor_speed")
-
-// Dati meteo ultimi 1h
-from(bucket: "sensor_metrics")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r._measurement == "sensor_weather")
-
-// Dati camera - condizioni stradali ultimi 1h
-from(bucket: "sensor_metrics")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r._measurement == "sensor_camera")
-
-// Conteggio incidenti per distretto
-from(bucket: "sensor_metrics")
-  |> range(start: -24h)
-  |> filter(fn: (r) => r._measurement == "sensor_camera")
-  |> filter(fn: (r) => r.road_condition == "accident")
-  |> group(columns: ["district_id"])
-  |> count()
-```
-
-## Struttura Progetto
-
-```
-prototype/
-├── docker-compose.yml          # Orchestrazione servizi
-├── edge-simulator/             # Edge device simulator
-│   ├── Dockerfile
-│   ├── edge_producer.py        # Producer Kafka
-│   └── requirements.txt
-├── monitor-python/             # Monitor consumer
-│   ├── Dockerfile
-│   ├── monitor_consumer.py     # Consumer Kafka + InfluxDB writer
-│   └── requirements.txt
-├── .env.example                # Variabili d'ambiente esempio
-└── README.md
-```
-
-## Funzionalità Implementate
-
-### Edge Simulators
-- **Sensori Velocità**: Generazione dati velocità con pre-aggregazione (moving average)
-- **Sensori Meteo**: Generazione dati temperatura, umidità e condizioni meteo
-- **Sensori Camera**: Edge analytics per valutazione condizioni stradali
-  - Analisi locale senza invio immagini/video
-  - Categorie: `clear`, `congestion`, `accident`, `obstacles`, `flooding`
-  - Confidence score (0.0-1.0) per affidabilità rilevamento
-  - Conteggio veicoli opzionale per traffico
-- Buffer locale per resilienza (fino a 1000 messaggi)
-- Invio a Kafka ogni 3-5 secondi (configurabile)
-
-### Monitor Python
-- Consumo da Kafka con consumer group
-- Validazione struttura messaggi per 3 tipi sensori (speed, weather, camera)
-- Validazione condizioni stradali e confidence score per sensori camera
-- Trasformazione in formato InfluxDB
-- Scrittura batch su InfluxDB
-- Statistiche di elaborazione
-
-### InfluxDB
-- Bucket con retention 30 giorni
-- Precision nanoseconds per timestamp
-- **Measurements**: `sensor_speed`, `sensor_weather`, `sensor_camera`
-- **Tags** indicizzati: district_id, edge_id, sensor_type, road_condition (camera), weather_conditions (weather)
-- **Fields**: metriche numeriche (speed_kmh, temperature_c, humidity, confidence_score, vehicle_count, **latitude**, **longitude**)
-
-### GPS Coordinates
-Ogni sensore include coordinate GPS precise per visualizzazione su mappa:
-- **District North** (Flaminio): 41.9109°N, 12.4818°E
-- **District South** (EUR): 41.8719°N, 12.4801°E
-- **District Center** (Colosseum): 41.8902°N, 12.4922°E
-
-Le coordinate permettono:
-- Visualizzazione su OpenStreetMap per digital twin della città
-- Analisi spaziale delle condizioni stradali
-- Correlazione geografica tra sensori vicini
-
-## Test Resilienza
-
-### Simula Disconnessione Monitor
-
-```bash
-# Ferma il monitor
-docker-compose stop monitor-python
-
-# Gli edge continuano a produrre, Kafka bufferizza
-
-# Riavvia il monitor dopo 30 secondi
-docker-compose start monitor-python
-
-# Verifica che tutti i messaggi vengano processati (nessuna perdita)
-docker-compose logs monitor-python
-```
-
-## Troubleshooting
-
-### Servizio non parte
-```bash
-# Controlla i log del servizio specifico
-docker-compose logs <service-name>
-
-# Ricostruisci le immagini
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### Kafka non riceve messaggi
-```bash
-# Verifica connettività Kafka
-docker-compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092
-```
-
-### InfluxDB non salva dati
-```bash
-# Verifica health InfluxDB
-docker-compose exec influxdb influx ping
-
-# Controlla token e configurazione
-docker-compose logs influxdb
-```
-
-## Performance
-
-- Edge simulators: ~20-30 messaggi/minuto ciascuno
-- Monitor consumer: >1000 messaggi/secondo
-- InfluxDB: Write throughput dipendente da hardware
-
-## Sviluppo Futuro
-
-- Aggiungere più edge simulators
-- Implementare dashboard Grafana
-- Aggiungere alerting su anomalie
-- Implementare analytics real-time con Kafka Streams
+Il codice del simulatore è organizzato in moduli:
+*   `city_simulator.py`: Entry point e gestione ciclo di vita.
+*   `edge_manager.py`: Gestione thread e coordinamento sensori per ogni edge.
+*   `sensor_simulator.py`: Logica di simulazione e aggregazione dati sensori.
+*   `city_config.json`: Configurazione dichiarativa della città.
