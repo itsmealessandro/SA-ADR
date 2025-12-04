@@ -1,0 +1,563 @@
+{
+    "metadata": {
+        "version": "1.0",
+        "created": "2025-12-04",
+        "description": "Digital Twin building configuration for L'Aquila Emergency Management System"
+    },
+    "buildings": [
+        {
+            "building_id": "building-hospital-001",
+            "name": "Ospedale San Salvatore",
+            "type": "hospital",
+            "description": "Main hospital and emergency care facility",
+            "location": {
+                "latitude": 42.3512,
+                "longitude": 13.4008,
+                "altitude_m": 714,
+                "address": "Corso Vittorio Emanuele II, L'Aquila"
+            },
+            "structure": {
+                "floors": 5,
+                "capacity_persons": 250,
+                "year_built": 1975,
+                "last_renovation": 2010
+            },
+            "managed_resources": {
+                "emergency_exits": [
+                    {
+                        "exit_id": "exit-hosp-001-main",
+                        "location": "Main entrance",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.4,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-hosp-001-east",
+                        "location": "East wing emergency",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 1.8,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-hosp-001-west",
+                        "location": "West wing emergency",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 1.8,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-hosp-001-rear",
+                        "location": "Rear service exit",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.0,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    }
+                ],
+                "elevators": [
+                    {
+                        "elevator_id": "elev-hosp-001-a",
+                        "location": "Central tower A",
+                        "status": "operational",
+                        "current_floor": 3,
+                        "capacity_persons": 10,
+                        "last_maintenance": "2025-11-15",
+                        "next_maintenance_due": "2025-12-15"
+                    },
+                    {
+                        "elevator_id": "elev-hosp-001-b",
+                        "location": "Central tower B",
+                        "status": "operational",
+                        "current_floor": 1,
+                        "capacity_persons": 10,
+                        "last_maintenance": "2025-11-15",
+                        "next_maintenance_due": "2025-12-15"
+                    },
+                    {
+                        "elevator_id": "elev-hosp-001-service",
+                        "location": "Service elevator",
+                        "status": "out_of_service",
+                        "current_floor": 0,
+                        "capacity_persons": 6,
+                        "last_maintenance": "2025-10-01",
+                        "next_maintenance_due": "2025-11-01",
+                        "fault_description": "Hydraulic system repair needed"
+                    }
+                ]
+            },
+            "sensors": {
+                "air_quality": [
+                    {
+                        "sensor_id": "aq-hosp-001-ext",
+                        "location": "External facade",
+                        "type": "outdoor",
+                        "measurements": {
+                            "pm25_ugm3": 18.5,
+                            "pm10_ugm3": 32.1,
+                            "no2_ugm3": 28.3,
+                            "co_ppm": 0.8,
+                            "o3_ugm3": 45.2
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    },
+                    {
+                        "sensor_id": "aq-hosp-001-lobby",
+                        "location": "Main lobby",
+                        "type": "indoor",
+                        "measurements": {
+                            "pm25_ugm3": 8.2,
+                            "pm10_ugm3": 12.5,
+                            "co2_ppm": 450,
+                            "voc_ppb": 120
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "acoustic": [
+                    {
+                        "sensor_id": "acoustic-hosp-001-ext",
+                        "location": "External facade",
+                        "type": "outdoor",
+                        "measurements": {
+                            "noise_level_db": 62.5,
+                            "peak_db": 78.3,
+                            "average_db_1h": 58.7
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "displays": [
+                    {
+                        "sensor_id": "display-hosp-001-ext-main",
+                        "type": "external",
+                        "location": "Main entrance",
+                        "coordinates": {
+                            "latitude": 42.3512,
+                            "longitude": 13.4008
+                        },
+                        "display_type": "LED_matrix",
+                        "size_meters": "2.0x1.0",
+                        "current_message": "EMERGENZA ATTIVA - SEGUIRE INDICAZIONI",
+                        "operational": true,
+                        "last_update": "2025-12-04T09:30:00Z"
+                    },
+                    {
+                        "sensor_id": "display-hosp-001-int-lobby",
+                        "type": "internal",
+                        "location": "Main lobby",
+                        "display_type": "LCD_screen",
+                        "size_meters": "1.5x0.8",
+                        "current_message": "Percorso evacuazione: Uscite EST e OVEST",
+                        "operational": true,
+                        "last_update": "2025-12-04T09:30:00Z"
+                    },
+                    {
+                        "sensor_id": "display-hosp-001-int-floor2",
+                        "type": "internal",
+                        "location": "Floor 2 corridor",
+                        "display_type": "LCD_screen",
+                        "size_meters": "1.5x0.8",
+                        "current_message": "Normale operatività",
+                        "operational": true,
+                        "last_update": "2025-12-04T08:00:00Z"
+                    }
+                ]
+            }
+        },
+        {
+            "building_id": "building-school-001",
+            "name": "Scuola Media Dante Alighieri",
+            "type": "school",
+            "description": "Middle school in historic center",
+            "location": {
+                "latitude": 42.3506,
+                "longitude": 13.3992,
+                "altitude_m": 721,
+                "address": "Piazza Duomo, L'Aquila"
+            },
+            "structure": {
+                "floors": 3,
+                "capacity_persons": 450,
+                "year_built": 1960,
+                "last_renovation": 2012
+            },
+            "managed_resources": {
+                "emergency_exits": [
+                    {
+                        "exit_id": "exit-school-001-main",
+                        "location": "Main entrance",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 3.0,
+                        "last_check": "2025-12-04T07:30:00Z"
+                    },
+                    {
+                        "exit_id": "exit-school-001-gym",
+                        "location": "Gymnasium exit",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.5,
+                        "last_check": "2025-12-04T07:30:00Z"
+                    },
+                    {
+                        "exit_id": "exit-school-001-courtyard",
+                        "location": "Courtyard exit",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.0,
+                        "last_check": "2025-12-04T07:30:00Z"
+                    }
+                ],
+                "elevators": [
+                    {
+                        "elevator_id": "elev-school-001-main",
+                        "location": "Main stairwell",
+                        "status": "operational",
+                        "current_floor": 0,
+                        "capacity_persons": 6,
+                        "last_maintenance": "2025-10-20",
+                        "next_maintenance_due": "2026-01-20"
+                    }
+                ]
+            },
+            "sensors": {
+                "air_quality": [
+                    {
+                        "sensor_id": "aq-school-001-ext",
+                        "location": "External courtyard",
+                        "type": "outdoor",
+                        "measurements": {
+                            "pm25_ugm3": 22.1,
+                            "pm10_ugm3": 38.5,
+                            "no2_ugm3": 35.7,
+                            "co_ppm": 1.2,
+                            "o3_ugm3": 42.8
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "acoustic": [
+                    {
+                        "sensor_id": "acoustic-school-001-ext",
+                        "location": "External facade",
+                        "type": "outdoor",
+                        "measurements": {
+                            "noise_level_db": 68.2,
+                            "peak_db": 85.1,
+                            "average_db_1h": 64.5
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "displays": [
+                    {
+                        "sensor_id": "display-school-001-ext-main",
+                        "type": "external",
+                        "location": "Main entrance",
+                        "coordinates": {
+                            "latitude": 42.3506,
+                            "longitude": 13.3992
+                        },
+                        "display_type": "LED_matrix",
+                        "size_meters": "1.5x0.8",
+                        "current_message": "Scuola in sessione - Traffico limitato",
+                        "operational": true,
+                        "last_update": "2025-12-04T07:30:00Z"
+                    },
+                    {
+                        "sensor_id": "display-school-001-int-hall",
+                        "type": "internal",
+                        "location": "Main hall",
+                        "display_type": "LCD_screen",
+                        "size_meters": "1.2x0.7",
+                        "current_message": "Avvisi: Prova evacuazione venerdì 10:00",
+                        "operational": true,
+                        "last_update": "2025-12-03T16:00:00Z"
+                    }
+                ]
+            }
+        },
+        {
+            "building_id": "building-office-001",
+            "name": "Palazzo Uffici Regione Abruzzo",
+            "type": "office",
+            "description": "Regional government office building",
+            "location": {
+                "latitude": 42.3675,
+                "longitude": 13.3512,
+                "altitude_m": 698,
+                "address": "Via L'Aquila, Pettino"
+            },
+            "structure": {
+                "floors": 8,
+                "capacity_persons": 600,
+                "year_built": 2005,
+                "last_renovation": 2020
+            },
+            "managed_resources": {
+                "emergency_exits": [
+                    {
+                        "exit_id": "exit-office-001-main",
+                        "location": "Main entrance",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 3.5,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-office-001-north",
+                        "location": "North stairwell",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.0,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-office-001-south",
+                        "location": "South stairwell",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.0,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-office-001-parking",
+                        "location": "Underground parking",
+                        "floor": -1,
+                        "status": "locked",
+                        "operational": true,
+                        "width_m": 2.2,
+                        "last_check": "2025-12-04T08:00:00Z"
+                    }
+                ],
+                "elevators": [
+                    {
+                        "elevator_id": "elev-office-001-a",
+                        "location": "Tower A",
+                        "status": "operational",
+                        "current_floor": 5,
+                        "capacity_persons": 12,
+                        "last_maintenance": "2025-11-28",
+                        "next_maintenance_due": "2026-02-28"
+                    },
+                    {
+                        "elevator_id": "elev-office-001-b",
+                        "location": "Tower B",
+                        "status": "operational",
+                        "current_floor": 2,
+                        "capacity_persons": 12,
+                        "last_maintenance": "2025-11-28",
+                        "next_maintenance_due": "2026-02-28"
+                    },
+                    {
+                        "elevator_id": "elev-office-001-c",
+                        "location": "Tower C",
+                        "status": "blocked",
+                        "current_floor": 7,
+                        "capacity_persons": 12,
+                        "last_maintenance": "2025-11-28",
+                        "next_maintenance_due": "2026-02-28",
+                        "fault_description": "Door sensor malfunction - technician dispatched"
+                    }
+                ]
+            },
+            "sensors": {
+                "air_quality": [
+                    {
+                        "sensor_id": "aq-office-001-ext",
+                        "location": "External facade north",
+                        "type": "outdoor",
+                        "measurements": {
+                            "pm25_ugm3": 15.3,
+                            "pm10_ugm3": 28.7,
+                            "no2_ugm3": 22.1,
+                            "co_ppm": 0.6,
+                            "o3_ugm3": 48.5
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    },
+                    {
+                        "sensor_id": "aq-office-001-int-floor4",
+                        "location": "Floor 4 open space",
+                        "type": "indoor",
+                        "measurements": {
+                            "pm25_ugm3": 5.8,
+                            "pm10_ugm3": 9.2,
+                            "co2_ppm": 520,
+                            "voc_ppb": 95
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "acoustic": [
+                    {
+                        "sensor_id": "acoustic-office-001-ext",
+                        "location": "External facade",
+                        "type": "outdoor",
+                        "measurements": {
+                            "noise_level_db": 55.8,
+                            "peak_db": 72.5,
+                            "average_db_1h": 53.2
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "displays": [
+                    {
+                        "sensor_id": "display-office-001-ext-main",
+                        "type": "external",
+                        "location": "Main entrance",
+                        "coordinates": {
+                            "latitude": 42.3675,
+                            "longitude": 13.3512
+                        },
+                        "display_type": "LED_matrix",
+                        "size_meters": "2.5x1.5",
+                        "current_message": "Regione Abruzzo - Orari: Lun-Ven 8:00-18:00",
+                        "operational": true,
+                        "last_update": "2025-12-02T09:00:00Z"
+                    },
+                    {
+                        "sensor_id": "display-office-001-int-lobby",
+                        "type": "internal",
+                        "location": "Main lobby",
+                        "display_type": "LCD_screen",
+                        "size_meters": "2.0x1.2",
+                        "current_message": "Benvenuti - Piano evacuazione disponibile presso reception",
+                        "operational": true,
+                        "last_update": "2025-12-01T08:00:00Z"
+                    },
+                    {
+                        "sensor_id": "display-office-001-int-floor7",
+                        "type": "internal",
+                        "location": "Floor 7 elevator hall",
+                        "display_type": "LCD_screen",
+                        "size_meters": "1.0x0.6",
+                        "current_message": "ATTENZIONE: Ascensore C fuori servizio",
+                        "operational": true,
+                        "last_update": "2025-12-04T09:15:00Z"
+                    }
+                ]
+            }
+        },
+        {
+            "building_id": "building-basilica-001",
+            "name": "Basilica di Collemaggio",
+            "type": "religious",
+            "description": "Historic basilica and cultural landmark",
+            "location": {
+                "latitude": 42.3425,
+                "longitude": 13.3989,
+                "altitude_m": 715,
+                "address": "Viale di Collemaggio, L'Aquila"
+            },
+            "structure": {
+                "floors": 2,
+                "capacity_persons": 300,
+                "year_built": 1288,
+                "last_renovation": 2017
+            },
+            "managed_resources": {
+                "emergency_exits": [
+                    {
+                        "exit_id": "exit-basilica-001-main",
+                        "location": "Main portal",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 4.0,
+                        "last_check": "2025-12-04T06:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-basilica-001-side",
+                        "location": "Side entrance",
+                        "floor": 0,
+                        "status": "unlocked",
+                        "operational": true,
+                        "width_m": 2.5,
+                        "last_check": "2025-12-04T06:00:00Z"
+                    },
+                    {
+                        "exit_id": "exit-basilica-001-sacristy",
+                        "location": "Sacristy exit",
+                        "floor": 0,
+                        "status": "locked",
+                        "operational": true,
+                        "width_m": 1.5,
+                        "last_check": "2025-12-04T06:00:00Z"
+                    }
+                ],
+                "elevators": []
+            },
+            "sensors": {
+                "air_quality": [
+                    {
+                        "sensor_id": "aq-basilica-001-ext",
+                        "location": "External square",
+                        "type": "outdoor",
+                        "measurements": {
+                            "pm25_ugm3": 19.8,
+                            "pm10_ugm3": 34.2,
+                            "no2_ugm3": 30.5,
+                            "co_ppm": 0.9,
+                            "o3_ugm3": 44.1
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "acoustic": [
+                    {
+                        "sensor_id": "acoustic-basilica-001-ext",
+                        "location": "External square",
+                        "type": "outdoor",
+                        "measurements": {
+                            "noise_level_db": 48.5,
+                            "peak_db": 65.2,
+                            "average_db_1h": 46.8
+                        },
+                        "last_reading": "2025-12-04T10:20:00Z",
+                        "status": "operational"
+                    }
+                ],
+                "displays": [
+                    {
+                        "sensor_id": "display-basilica-001-ext",
+                        "type": "external",
+                        "location": "Square entrance",
+                        "coordinates": {
+                            "latitude": 42.3425,
+                            "longitude": 13.3989
+                        },
+                        "display_type": "LED_matrix",
+                        "size_meters": "1.2x0.8",
+                        "current_message": "Orari visite: 9:00-18:00",
+                        "operational": true,
+                        "last_update": "2025-12-01T08:00:00Z"
+                    }
+                ]
+            }
+        }
+    ]
+}

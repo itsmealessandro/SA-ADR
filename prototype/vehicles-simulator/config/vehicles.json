@@ -1,0 +1,264 @@
+{
+    "metadata": {
+        "version": "1.0",
+        "created": "2025-12-04",
+        "description": "Digital Twin vehicle configuration for L'Aquila Emergency Management System"
+    },
+    "vehicles": [
+        {
+            "vehicle_id": "vehicle-emergency-001",
+            "type": "ambulance",
+            "name": "Ambulanza 118 - Alpha",
+            "description": "Primary emergency ambulance for Centro Storico",
+            "gps_position": {
+                "latitude": 42.3506,
+                "longitude": 13.3992,
+                "altitude_m": 721
+            },
+            "movement": {
+                "speed_kmh": 35.5,
+                "direction_degrees": 180,
+                "heading": "south"
+            },
+            "managed_resources": {
+                "battery_level_percent": 87,
+                "firmware_version": "v2.3.1",
+                "last_maintenance_date": "2025-11-20",
+                "next_maintenance_due": "2026-02-20"
+            },
+            "sensors": {
+                "accelerometer": {
+                    "sensor_id": "accel-vehicle-001",
+                    "incident_detected": false,
+                    "threshold_g": 3.5,
+                    "last_reading_timestamp": "2025-12-04T10:22:00Z"
+                }
+            },
+            "route_planning": {
+                "current_destination": {
+                    "latitude": 42.3425,
+                    "longitude": 13.3989,
+                    "location_name": "Basilica di Collemaggio"
+                },
+                "predicted_destinations": [
+                    {
+                        "latitude": 42.3512,
+                        "longitude": 13.4008,
+                        "location_name": "Ospedale San Salvatore",
+                        "eta_minutes": 8,
+                        "probability": 0.85
+                    }
+                ],
+                "route_priority": "critical"
+            },
+            "status": {
+                "operational": true,
+                "on_mission": true,
+                "crew_available": true
+            }
+        },
+        {
+            "vehicle_id": "vehicle-emergency-002",
+            "type": "firetruck",
+            "name": "Autopompa VVF - Bravo",
+            "description": "Fire Brigade main pumper truck",
+            "gps_position": {
+                "latitude": 42.3675,
+                "longitude": 13.3512,
+                "altitude_m": 698
+            },
+            "movement": {
+                "speed_kmh": 0.0,
+                "direction_degrees": 0,
+                "heading": "stationary"
+            },
+            "managed_resources": {
+                "battery_level_percent": 100,
+                "firmware_version": "v2.3.1",
+                "last_maintenance_date": "2025-11-15",
+                "next_maintenance_due": "2026-02-15"
+            },
+            "sensors": {
+                "accelerometer": {
+                    "sensor_id": "accel-vehicle-002",
+                    "incident_detected": false,
+                    "threshold_g": 3.5,
+                    "last_reading_timestamp": "2025-12-04T10:22:00Z"
+                }
+            },
+            "route_planning": {
+                "current_destination": null,
+                "predicted_destinations": [],
+                "route_priority": "standby"
+            },
+            "status": {
+                "operational": true,
+                "on_mission": false,
+                "crew_available": true
+            }
+        },
+        {
+            "vehicle_id": "vehicle-emergency-003",
+            "type": "police",
+            "name": "Volante Polizia - Charlie",
+            "description": "Police patrol car for traffic management",
+            "gps_position": {
+                "latitude": 42.3432,
+                "longitude": 13.3968,
+                "altitude_m": 715
+            },
+            "movement": {
+                "speed_kmh": 48.2,
+                "direction_degrees": 270,
+                "heading": "west"
+            },
+            "managed_resources": {
+                "battery_level_percent": 62,
+                "firmware_version": "v2.2.5",
+                "last_maintenance_date": "2025-10-30",
+                "next_maintenance_due": "2026-01-30"
+            },
+            "sensors": {
+                "accelerometer": {
+                    "sensor_id": "accel-vehicle-003",
+                    "incident_detected": false,
+                    "threshold_g": 3.5,
+                    "last_reading_timestamp": "2025-12-04T10:22:00Z"
+                }
+            },
+            "route_planning": {
+                "current_destination": {
+                    "latitude": 42.3418,
+                    "longitude": 13.3975,
+                    "location_name": "Via Collemaggio - Incident Site"
+                },
+                "predicted_destinations": [
+                    {
+                        "latitude": 42.3506,
+                        "longitude": 13.3992,
+                        "location_name": "Piazza Duomo Headquarters",
+                        "eta_minutes": 12,
+                        "probability": 0.70
+                    }
+                ],
+                "route_priority": "high"
+            },
+            "status": {
+                "operational": true,
+                "on_mission": true,
+                "crew_available": true
+            }
+        },
+        {
+            "vehicle_id": "vehicle-civil-004",
+            "type": "bus",
+            "name": "AMA Autobus Linea 3",
+            "description": "Public transport bus - Line 3",
+            "gps_position": {
+                "latitude": 42.3512,
+                "longitude": 13.4008,
+                "altitude_m": 714
+            },
+            "movement": {
+                "speed_kmh": 22.0,
+                "direction_degrees": 90,
+                "heading": "east"
+            },
+            "managed_resources": {
+                "battery_level_percent": 45,
+                "firmware_version": "v1.8.3",
+                "last_maintenance_date": "2025-11-25",
+                "next_maintenance_due": "2025-12-25"
+            },
+            "sensors": {
+                "accelerometer": {
+                    "sensor_id": "accel-vehicle-004",
+                    "incident_detected": false,
+                    "threshold_g": 3.5,
+                    "last_reading_timestamp": "2025-12-04T10:22:00Z"
+                }
+            },
+            "route_planning": {
+                "current_destination": {
+                    "latitude": 42.3695,
+                    "longitude": 13.3548,
+                    "location_name": "Via L'Aquila - Terminus"
+                },
+                "predicted_destinations": [
+                    {
+                        "latitude": 42.3506,
+                        "longitude": 13.3992,
+                        "location_name": "Piazza Duomo Stop",
+                        "eta_minutes": 15,
+                        "probability": 0.95
+                    },
+                    {
+                        "latitude": 42.3675,
+                        "longitude": 13.3512,
+                        "location_name": "University Campus Stop",
+                        "eta_minutes": 22,
+                        "probability": 0.90
+                    }
+                ],
+                "route_priority": "normal"
+            },
+            "status": {
+                "operational": true,
+                "on_mission": true,
+                "crew_available": true
+            }
+        },
+        {
+            "vehicle_id": "vehicle-civil-005",
+            "type": "delivery",
+            "name": "Corriere Express Delta",
+            "description": "Commercial delivery van",
+            "gps_position": {
+                "latitude": 42.3418,
+                "longitude": 13.3975,
+                "altitude_m": 712
+            },
+            "movement": {
+                "speed_kmh": 15.8,
+                "direction_degrees": 45,
+                "heading": "northeast"
+            },
+            "managed_resources": {
+                "battery_level_percent": 28,
+                "firmware_version": "v1.5.0",
+                "last_maintenance_date": "2025-09-10",
+                "next_maintenance_due": "2025-12-10"
+            },
+            "sensors": {
+                "accelerometer": {
+                    "sensor_id": "accel-vehicle-005",
+                    "incident_detected": false,
+                    "threshold_g": 3.5,
+                    "last_reading_timestamp": "2025-12-04T10:22:00Z"
+                }
+            },
+            "route_planning": {
+                "current_destination": {
+                    "latitude": 42.3425,
+                    "longitude": 13.3989,
+                    "location_name": "Commercial Zone Collemaggio"
+                },
+                "predicted_destinations": [
+                    {
+                        "latitude": 42.3512,
+                        "longitude": 13.4008,
+                        "location_name": "Corso Vittorio Emanuele",
+                        "eta_minutes": 10,
+                        "probability": 0.75
+                    }
+                ],
+                "route_priority": "normal"
+            },
+            "status": {
+                "operational": true,
+                "on_mission": true,
+                "crew_available": true
+            }
+        }
+    ]
+}

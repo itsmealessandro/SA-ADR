@@ -39,7 +39,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # InfluxDB - Time Series Database
+  # InfluxDB - Time Series Database (with all buckets)
   influxdb:
     image: influxdb:2.7
     container_name: ems-influxdb
@@ -50,11 +50,12 @@ services:
       DOCKER_INFLUXDB_INIT_USERNAME: admin
       DOCKER_INFLUXDB_INIT_PASSWORD: adminpassword
       DOCKER_INFLUXDB_INIT_ORG: emergency-mgmt
-      DOCKER_INFLUXDB_INIT_BUCKET: sensor_metrics
+      DOCKER_INFLUXDB_INIT_BUCKET: city_metrics
       DOCKER_INFLUXDB_INIT_RETENTION: 30d
       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ems-super-secret-token-12345
     volumes:
       - influxdb-data:/var/lib/influxdb2
+      - ./init-influx.sh:/docker-entrypoint-initdb.d/init-influx.sh
     networks:
       - ems-network
     healthcheck:
@@ -63,30 +64,67 @@ services:
       timeout: 5s
       retries: 5
 
-  # City Simulator - MAPE-K Architecture
-  # Single container managing all districts and edges dynamically from city_config.json
+  # === SIMULATORS ===
+  
+  # City Simulator - Districts and edges sensors
   city-simulator:
     build:
-      context: ./city-simulator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./city-simulator/Dockerfile
     container_name: ems-city
     depends_on:
       kafka:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: sensor-data
-      CITY_CONFIG_FILE: /app/city_config.json
+      KAFKA_TOPIC: city-sensor-data
+      CITY_CONFIG_FILE: /app/config/city_config.json
     networks:
       - ems-network
     restart: unless-stopped
 
-  # Monitor Python - Consumer and Validator
-  monitor-python:
+  # Vehicles Simulator - Vehicle tracking and monitoring
+  vehicles-simulator:
     build:
-      context: ./monitor-python
+      context: .
+      dockerfile: ./vehicles-simulator/Dockerfile
+    container_name: ems-vehicles
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: vehicles-sensor-data
+      VEHICLES_CONFIG_FILE: /app/config/vehicles.json
+    networks:
+      - ems-network
+    restart: unless-stopped
+
+  # Buildings Simulator - Building safety and environmental monitoring
+  buildings-simulator:
+    build:
+      context: .
+      dockerfile: ./buildings-simulator/Dockerfile
+    container_name: ems-buildings
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: buildings-sensor-data
+      BUILDINGS_CONFIG_FILE: /app/config/buildings.json
+    networks:
+      - ems-network
+    restart: unless-stopped
+
+  # === MONITORS ===
+
+  # City Monitor - Processes city sensor data
+  city-monitor:
+    build:
+      context: ./city-monitor
       dockerfile: Dockerfile
-    container_name: ems-monitor
+    container_name: ems-city-monitor
     depends_on:
       kafka:
         condition: service_healthy
@@ -94,12 +132,58 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: sensor-data
-      KAFKA_GROUP_ID: monitor-consumer-group
+      KAFKA_TOPIC: city-sensor-data
+      KAFKA_GROUP_ID: city-monitor-group
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_TOKEN: ems-super-secret-token-12345
       INFLUXDB_ORG: emergency-mgmt
-      INFLUXDB_BUCKET: sensor_metrics
+      INFLUXDB_BUCKET: city_metrics
+    networks:
+      - ems-network
+    restart: unless-stopped
+
+  # Vehicles Monitor - Processes vehicle tracking data
+  vehicles-monitor:
+    build:
+      context: ./vehicles-monitor
+      dockerfile: Dockerfile
+    container_name: ems-vehicles-monitor
+    depends_on:
+      kafka:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: vehicles-sensor-data
+      KAFKA_GROUP_ID: vehicles-monitor-group
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ems-super-secret-token-12345
+      INFLUXDB_ORG: emergency-mgmt
+      INFLUXDB_BUCKET: vehicles_metrics
+    networks:
+      - ems-network
+    restart: unless-stopped
+
+  # Buildings Monitor - Processes building sensor data
+  buildings-monitor:
+    build:
+      context: ./buildings-monitor
+      dockerfile: Dockerfile
+    container_name: ems-buildings-monitor
+    depends_on:
+      kafka:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: buildings-sensor-data
+      KAFKA_GROUP_ID: buildings-monitor-group
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: ems-super-secret-token-12345
+      INFLUXDB_ORG: emergency-mgmt
+      INFLUXDB_BUCKET: buildings_metrics
     networks:
       - ems-network
     restart: unless-stopped
