@@ -24,12 +24,12 @@ logger = logging.getLogger(__name__)
 
 # Environment variables
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'sensor-data')
-KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID', 'monitor-consumer-group')
+KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'city-sensor-data')  # Updated for city component
+KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID', 'city-monitor-group')
 INFLUXDB_URL = os.getenv('INFLUXDB_URL', 'http://localhost:8086')
 INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN', '')
 INFLUXDB_ORG = os.getenv('INFLUXDB_ORG', 'emergency-mgmt')
-INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET', 'sensor_metrics')
+INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET', 'city_metrics')  # Updated for city component
 
 
 class MonitorConsumer:

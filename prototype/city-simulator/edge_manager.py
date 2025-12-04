@@ -15,7 +15,6 @@ import threading
 from datetime import datetime
 from typing import Dict, Any
 from collections import deque
-from kafka import KafkaProducer
 
 from sensor_simulator import SpeedSensorSimulator, WeatherSensorSimulator, CameraSensorSimulator
 
@@ -40,7 +39,7 @@ class EdgeManager:
     """
     
     def __init__(self, district_id: str, edge_config: Dict, 
-                 kafka_producer: KafkaProducer, kafka_topic: str, 
+                 kafka_producer: Any, kafka_topic: str, 
                  stop_event: threading.Event):
         """
         Initialize an Edge Manager.

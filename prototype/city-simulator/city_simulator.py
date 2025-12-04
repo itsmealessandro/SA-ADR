@@ -24,7 +24,12 @@ import time
 import json
 import logging
 import threading
-from kafka import KafkaProducer
+
+# Add parent directory to path to import common module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import common utilities
+from common.kafka_utils import create_kafka_producer
 
 # Import our modular components
 from edge_manager import EdgeManager
@@ -38,9 +43,9 @@ logger = logging.getLogger(__name__)
 
 # Environment variables for configuration
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'sensor-data')
+KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'city-sensor-data')  # Updated topic for city component
 CITY_CONFIG_FILE = os.getenv('CITY_CONFIG_FILE', 
-                              os.path.join(os.path.dirname(__file__), 'city_config.json'))
+                              os.path.join(os.path.dirname(__file__), 'config', 'city_config.json'))
 
 
 def load_city_config():
@@ -110,12 +115,12 @@ class CitySimulator:
         logger.info(f"✓ CitySimulator initialized for {self.city_name}")
         logger.info(f"  Total edges: {len(self.edge_managers)}")
     
-    def _init_kafka_producer(self) -> KafkaProducer:
+    def _init_kafka_producer(self):
         """
-        Initialize Kafka producer with retry logic.
+        Initialize Kafka producer using common utilities.
         
         The producer is shared across all edge managers (thread-safe).
-        Implements exponential backoff for connection retries.
+        Uses the shared kafka_utils module for consistent connection handling.
         
         Returns:
             Connected KafkaProducer instance
@@ -123,29 +128,19 @@ class CitySimulator:
         Raises:
             Exception: If connection fails after all retries
         """
-        max_retries = 10
-        retry_delay = 5
+        # Use common utility for Kafka producer creation
+        # Note: We override the value_serializer to use JSON encoding
+        producer = create_kafka_producer(
+            bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+            max_retries=10,
+            retry_delay=5
+        )
         
-        for attempt in range(max_retries):
-            try:
-                producer = KafkaProducer(
-                    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                    value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                    acks='all',  # Wait for all replicas to acknowledge
-                    retries=3,
-                    max_in_flight_requests_per_connection=1,  # Ensure ordering
-                )
-                logger.info(f"✓ Connected to Kafka: {KAFKA_BOOTSTRAP_SERVERS}")
-                return producer
-            except Exception as e:
-                logger.warning(
-                    f"Kafka connection attempt {attempt + 1}/{max_retries} failed: {e}"
-                )
-                if attempt < max_retries - 1:
-                    time.sleep(retry_delay)
-                else:
-                    logger.error("✗ Failed to connect to Kafka after all retries")
-                    raise
+        # Re-configure for JSON serialization (common uses string serialization)
+        producer.config['value_serializer'] = lambda v: json.dumps(v).encode('utf-8')
+        
+        logger.info(f"✓ City simulator Kafka producer ready (topic: {KAFKA_TOPIC})")
+        return producer
     
     def _initialize_edges(self):
         """
