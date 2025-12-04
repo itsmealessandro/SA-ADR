@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 export class RedisStateManager {
   private client: Redis;
   private readonly keyPrefix = 'district:';
-  private readonly cityGraphKey = 'city:graph';
+  // private readonly _cityGraphKey = 'city:graph';
   private readonly publicTransportKey = 'city:publicTransport';
   private readonly emergencyServicesKey = 'city:emergencyServices';
   private readonly cityMetadataKey = 'city:metadata';

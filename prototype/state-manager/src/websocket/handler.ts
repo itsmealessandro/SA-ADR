@@ -10,7 +10,7 @@ export class WebSocketHandler {
   private redisManager: RedisStateManager;
   private diffPatcher: jsondiffpatch.DiffPatcher;
   private lastStates: Map<string, City> = new Map();
-  private updateBuffer: Map<string, any> = new Map();
+  // private updateBuffer: Map<string, any> = new Map();
   private updateTimer: NodeJS.Timeout | null = null;
   private bufferInterval: number;
 

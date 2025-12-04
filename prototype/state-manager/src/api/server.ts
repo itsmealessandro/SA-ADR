@@ -22,7 +22,7 @@ export class ApiServer {
     this.app.use(express.json());
 
     // Request logging
-    this.app.use((req, res, next) => {
+    this.app.use((req, _res, next) => {
       logger.debug(`${req.method} ${req.path}`);
       next();
     });
@@ -32,12 +32,12 @@ export class ApiServer {
     this.app.use('/', routes);
 
     // 404 handler
-    this.app.use((req, res) => {
+    this.app.use((_req, res) => {
       res.status(404).json({ error: 'Not found' });
     });
 
     // Error handler
-    this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    this.app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
       logger.error('Unhandled error:', err);
       res.status(500).json({ error: 'Internal server error' });
     });
