@@ -29,21 +29,44 @@ class BuildingSensorSimulator:
         Args:
             building_config: Complete building configuration from buildings.json
         """
+        # IDENTIFICAZIONE EDIFICIO
+        # building_id: ID univoco dell'edificio (es. "building-hospital-001")
         self.building_id = building_config['building_id']
+        
+        # building_name: Nome descrittivo (es. "Ospedale San Salvatore")
         self.building_name = building_config['name']
+        
+        # building_type: Tipologia (hospital, school, office, religious, residential)
+        # PERCHÉ È IMPORTANTE: Determina priorità evacuazione e requisiti sicurezza
+        # Es: Ospedali richiedono piani evacuazione speciali per pazienti immobili
         self.building_type = building_config['type']
+        
+        # LOCATION - Posizione geografica fissa dell'edificio (non cambia nel tempo)
         self.location = building_config['location']
         
-        # Managed resources
+        # MANAGED RESOURCES - Risorse critiche gestite per la sicurezza
+        
+        # emergency_exits: Uscite di sicurezza (status, floor, width, operational)
+        # PERCHÉ È IMPORTANTE: Durante evacuazione, il sistema deve sapere quali
+        # uscite sono disponibili. Se un'uscita è bloccata/guasta → ricalcola percorso
         self.emergency_exits = building_config['managed_resources']['emergency_exits']
+        
+        # elevators: Ascensori (status, floor, capacity, faults)
+        # PERCHÉ È IMPORTANTE: Durante emergenze sismiche, ascensori NON vanno usati.
+        # Il sistema deve monitorare lo stato e disabilitarli se necessario.
+        # In condizioni normali, utile per persone con disabilità motorie
         self.elevators = building_config['managed_resources']['elevators']
         
-        # Sensors configuration
+        # SENSORS CONFIGURATION - Configurazione di tutti i sensori installati
+        # air_quality, acoustic, displays
         self.sensors_config = building_config['sensors']
     
     def _simulate_air_quality_reading(self, aq_sensor: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Simulate air quality sensor reading with realistic variations.
+        Simula lettura sensore qualità dell'aria con variazioni realistiche.
+        
+        La qualità dell'aria è critica per la salute pubblica, specialmente
+        in edifici pubblici (ospedali, scuole). Monitora inquinanti pericolosi.
         
         Args:
             aq_sensor: Air quality sensor configuration
@@ -51,24 +74,25 @@ class BuildingSensorSimulator:
         Returns:
             Updated sensor data with new measurements
         """
-        sensor_type = aq_sensor.get('type', 'outdoor')
+        sensor_type = aq_sensor.get('type', 'outdoor')  # indoor o outdoor
         base_measurements = aq_sensor['measurements']
         
-        # Add small random variations to create realistic data
+        # Aggiunge piccole variazioni casuali per creare dati realistici
+        # Nella realtà, qualità aria varia per: traffico, vento, temperatura, umidità
         new_measurements = {}
         for key, base_value in base_measurements.items():
-            # ±10% variation
+            # Variazione ±10% per simulare fluttuazioni naturali
             variation = random.uniform(-0.1, 0.1)
             new_value = base_value * (1 + variation)
             new_measurements[key] = round(new_value, 1)
         
         return {
             'sensor_id': aq_sensor['sensor_id'],
-            'location': aq_sensor['location'],
-            'type': sensor_type,
-            'measurements': new_measurements,
+            'location': aq_sensor['location'],  # Posizione sensore nell'edificio
+            'type': sensor_type,  # indoor (dentro edificio) o outdoor (esterno)
+            'measurements': new_measurements,  # Dizionario con tutte le misurazioni
             'last_reading': datetime.utcnow().isoformat() + 'Z',
-            'status': 'operational'
+            'status': 'operational'  # operational, maintenance, fault
         }
     
     def _simulate_acoustic_reading(self, acoustic_sensor: Dict[str, Any]) -> Dict[str, Any]:
@@ -194,44 +218,49 @@ class BuildingSensorSimulator:
     
     def generate_data(self) -> Dict[str, Any]:
         """
-        Generate complete building sensor data.
+        Genera i dati completi dei sensori dell'edificio.
+        
+        Chiamato ogni ~5 secondi per ogni edificio, produce un payload JSON
+        completo con tutte le metriche ambientali e di sicurezza.
         
         Returns:
             Dictionary with all building sensor readings and status
         """
-        # Simulate all air quality sensors
+        # Simula tutti i sensori di qualità dell'aria
         air_quality_data = []
         for aq_sensor in self.sensors_config.get('air_quality', []):
             air_quality_data.append(self._simulate_air_quality_reading(aq_sensor))
         
-        # Simulate all acoustic sensors
+        # Simula tutti i sensori acustici
         acoustic_data = []
         for acoustic_sensor in self.sensors_config.get('acoustic', []):
             acoustic_data.append(self._simulate_acoustic_reading(acoustic_sensor))
         
-        # Simulate all displays
+        # Simula tutti i display informativi
         displays_data = []
         for display in self.sensors_config.get('displays', []):
             displays_data.append(self._simulate_display_status(display))
         
-        # Simulate all emergency exits
+        # Simula tutte le uscite di emergenza
         exits_data = []
         for exit_config in self.emergency_exits:
             exits_data.append(self._simulate_emergency_exit_status(exit_config))
         
-        # Simulate all elevators
+        # Simula tutti gli ascensori
         elevators_data = []
         for elevator in self.elevators:
             elevators_data.append(self._simulate_elevator_status(elevator))
         
-        # Build complete data payload
+        # Costruisce il payload completo dei dati
         data = {
-            'building_id': self.building_id,
-            'building_name': self.building_name,
-            'building_type': self.building_type,
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            # === IDENTIFICAZIONE EDIFICIO ===
+            'building_id': self.building_id,  # ID univoco
+            'building_name': self.building_name,  # Nome descrittivo
+            'building_type': self.building_type,  # Tipologia edificio
+            'timestamp': datetime.utcnow().isoformat() + 'Z',  # Timestamp lettura
             
-            # Location (fixed)
+            # === LOCATION - Posizione geografica fissa ===
+            # Gli edifici non si muovono, ma serve per mappe e calcoli distanza
             'location': {
                 'latitude': self.location['latitude'],
                 'longitude': self.location['longitude'],
@@ -239,16 +268,72 @@ class BuildingSensorSimulator:
                 'address': self.location.get('address', '')
             },
             
-            # Sensors
+            # === SENSORS - Dati ambientali e comunicazione ===
             'sensors': {
+                # AIR QUALITY - Qualità dell'aria (interno/esterno)
+                # PM2.5: Particolato fine (<2.5 micrometri) - MOLTO PERICOLOSO
+                #        Penetra profondamente nei polmoni. OMS raccomanda <10 µg/m³
+                # PM10: Particolato inalabile (<10 micrometri) - PERICOLOSO
+                #       Irrita vie respiratorie. OMS raccomanda <20 µg/m³
+                # NO2: Diossido di azoto (da traffico/combustione)
+                #      Causa asma, bronchiti. Limite UE: 40 µg/m³ media annua
+                # CO: Monossido di carbonio (da combustione incompleta)
+                #     TOSSICO: si lega all'emoglobina. Limite: 10 mg/m³ (8h)
+                # O3: Ozono troposferico (da reazioni fotochimiche)
+                #     Irrita polmoni, peggiora in estate. Limite: 120 µg/m³
+                # VOC: Composti organici volatili (da vernici, detergenti)
+                #      Causano mal di testa, irritazioni. Monitorare <500 µg/m³
+                # CO2: Anidride carbonica (da respirazione)
+                #      Indica ventilazione. <1000ppm = ok, >1500ppm = scarsa
+                # PERCHÉ IMPORTANTE: Durante emergenze (incendi, fughe gas),
+                # questi dati decidono se evacuare o ventilare l'edificio
                 'air_quality': air_quality_data,
+                
+                # ACOUSTIC - Sensori acustici (inquinamento sonoro)
+                # noise_level_db: Livello rumore in decibel (dB)
+                #                 <40dB = silenzioso, 60dB = conversazione
+                #                 >85dB = dannoso (esposizione prolungata)
+                #                 >120dB = soglia del dolore
+                # peak_db: Picco massimo registrato
+                # average_db_1h: Media ultima ora
+                # PERCHÉ IMPORTANTE: Monitorare rumore vicino ospedali/scuole.
+                # In emergenza, sirene/allarmi DEVONO essere udibili sopra rumore base
                 'acoustic': acoustic_data,
+                
+                # DISPLAYS - Pannelli informativi georeferenziati
+                # type: internal (dentro edificio) / external (fuori, su facciata)
+                # current_message: Messaggio attualmente visualizzato
+                # coordinates: Posizione GPS precisa del display
+                # PERCHÉ IMPORTANTE: Durante emergenze, la centrale può inviare
+                # messaggi coordinati su tutti i display della città.
+                # Es: "CHIUSURA VIA ROMA - FUGA GAS" su tutti i display nearby
                 'displays': displays_data
             },
             
-            # Managed Resources
+            # === MANAGED RESOURCES - Risorse critiche sicurezza ===
             'managed_resources': {
+                # EMERGENCY EXITS - Uscite di sicurezza
+                # status: locked (chiusa) / unlocked (aperta)
+                # operational: True se funzionante, False se guasta/bloccata
+                # floor: Piano dell'uscita (0=terra, 1=primo, -1=seminterrato)
+                # width_m: Larghezza in metri (min 1.2m per accessibilità)
+                # PERCHÉ IMPORTANTE: In caso evacuazione, sistema calcola:
+                # - Capacità flusso persone (width × 1.3 persone/metro/secondo)
+                # - Percorsi alternativi se un'uscita è bloccata
+                # - Tempo stimato evacuazione totale edificio
+                # CRITICO: Se >50% uscite non operative → ALLERTA SICUREZZA
                 'emergency_exits': exits_data,
+                
+                # ELEVATORS - Ascensori
+                # status: operational / blocked / out_of_service
+                # current_floor: Piano attuale (0-N)
+                # capacity_persons: Capienza massima persone
+                # fault_description: Descrizione guasto (se presente)
+                # PERCHÉ IMPORTANTE:
+                # USO NORMALE: Accessibilità per disabili motori
+                # EMERGENZA SISMICA: VIETATO ascensori → sistema li disabilita
+                # EMERGENZA INCENDIO: Se sotto piano incendio, possono evacuare disabili
+                # MANUTENZIONE PREDITTIVA: Pattern di guasti → manutenzione preventiva
                 'elevators': elevators_data
             }
         }
