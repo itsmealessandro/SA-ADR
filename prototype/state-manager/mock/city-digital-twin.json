@@ -1,0 +1,848 @@
+{
+  "cityId": "smart-city-001",
+  "timestamp": "2025-12-04T10:30:00Z",
+  "metadata": {
+    "name": "Smart City Digital Twin",
+    "version": "1.0",
+    "lastUpdated": "2025-12-04T10:30:00Z"
+  },
+  "districts": [
+    {
+      "districtId": "DIST-001",
+      "name": "Downtown District",
+      "location": {
+        "centerLatitude": 40.7128,
+        "centerLongitude": -74.0060,
+        "boundaries": {
+          "north": 40.7200,
+          "south": 40.7050,
+          "east": -74.0000,
+          "west": -74.0120
+        }
+      },
+      "sensors": [
+        {
+          "sensorId": "PM25-001",
+          "type": "pm25",
+          "location": {
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "elevation": 10
+          },
+          "value": 12.5,
+          "unit": "μg/m³",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:45Z"
+        },
+        {
+          "sensorId": "NOISE-001",
+          "type": "noise",
+          "location": {
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "elevation": 10
+          },
+          "value": 65,
+          "unit": "dB",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:45Z"
+        },
+        {
+          "sensorId": "VEHICLE-001",
+          "type": "vehicleCount",
+          "location": {
+            "latitude": 40.7130,
+            "longitude": -74.0065,
+            "roadSegmentId": "RS-101"
+          },
+          "value": 45,
+          "unit": "vehicles",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:30:00Z"
+        },
+        {
+          "sensorId": "CAM-001",
+          "type": "trafficCamera",
+          "location": {
+            "latitude": 40.7130,
+            "longitude": -74.0065,
+            "roadSegmentId": "RS-101",
+            "direction": "northbound"
+          },
+          "value": 68,
+          "unit": "congestionLevel",
+          "metadata": {
+            "avgSpeed": 35,
+            "vehicleCount": 45,
+            "congestionStatus": "moderate"
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:30:00Z"
+        },
+        {
+          "sensorId": "PARKING-001",
+          "type": "parkingOccupancy",
+          "location": {
+            "latitude": 40.7100,
+            "longitude": -74.0080,
+            "parkingLotId": "PL-001"
+          },
+          "value": 87,
+          "unit": "spaces",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:50Z"
+        }
+      ],
+      "buildings": [
+        {
+          "buildingId": "BLD-001",
+          "name": "City Hall",
+          "type": "government",
+          "location": {
+            "latitude": 40.7127,
+            "longitude": -74.0059,
+            "address": "123 Main Street"
+          },
+          "floors": 10,
+          "totalCapacity": 500,
+          "currentOccupancy": 342,
+          "occupancyRate": 0.684,
+          "sensors": [
+        {
+          "sensorId": "BLD-001-TEMP-01",
+          "type": "temperature",
+          "floor": 3,
+          "value": 22.5,
+          "unit": "°C",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:30Z"
+        },
+        {
+          "sensorId": "BLD-001-HUMIDITY-01",
+          "type": "humidity",
+          "floor": 3,
+          "value": 45,
+          "unit": "%",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:30Z"
+        },
+        {
+          "sensorId": "BLD-001-ENERGY-01",
+          "type": "powerConsumption",
+          "value": 125.5,
+          "unit": "kW",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:55Z"
+        },
+        {
+          "sensorId": "BLD-001-OCCUPANCY-01",
+          "type": "occupancy",
+          "floor": 1,
+          "value": 45,
+          "unit": "people",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:30:00Z"
+        }
+      ],
+      "status": "operational"
+        }
+      ],
+      "weatherStations": [
+        {
+          "stationId": "WS-001",
+          "name": "Downtown Weather Station",
+          "location": {
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "elevation": 15
+          },
+          "readings": {
+            "temperature": 18.5,
+            "humidity": 62,
+            "pressure": 1013.25,
+            "windSpeed": 12.5,
+            "windDirection": 225,
+            "precipitation": 0.0,
+            "cloudCover": 40,
+            "visibility": 10.0,
+            "uvIndex": 5,
+            "units": {
+              "temperature": "°C",
+              "humidity": "%",
+              "pressure": "hPa",
+              "windSpeed": "km/h",
+              "windDirection": "degrees",
+              "precipitation": "mm",
+              "cloudCover": "%",
+              "visibility": "km"
+            }
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:30:00Z"
+        }
+      ]
+    },
+    {
+      "districtId": "DIST-002",
+      "name": "Midtown District",
+      "location": {
+        "centerLatitude": 40.7589,
+        "centerLongitude": -73.9851,
+        "boundaries": {
+          "north": 40.7650,
+          "south": 40.7520,
+          "east": -73.9780,
+          "west": -73.9920
+        }
+      },
+      "sensors": [
+        {
+          "sensorId": "PM25-002",
+          "type": "pm25",
+          "location": {
+            "latitude": 40.7589,
+            "longitude": -73.9851,
+            "elevation": 12
+          },
+          "value": 15.2,
+          "unit": "μg/m³",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:48Z"
+        },
+        {
+          "sensorId": "NOISE-002",
+          "type": "noise",
+          "location": {
+            "latitude": 40.7589,
+            "longitude": -73.9851,
+            "elevation": 12
+          },
+          "value": 72,
+          "unit": "dB",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:48Z"
+        },
+        {
+          "sensorId": "CAM-002",
+          "type": "trafficCamera",
+          "location": {
+            "latitude": 40.7580,
+            "longitude": -73.9855,
+            "roadSegmentId": "RS-102",
+            "direction": "eastbound"
+          },
+          "value": 42,
+          "unit": "congestionLevel",
+          "metadata": {
+            "avgSpeed": 42,
+            "vehicleCount": 32,
+            "congestionStatus": "light"
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:55Z"
+        },
+        {
+          "sensorId": "VEHICLE-002",
+          "type": "vehicleCount",
+          "location": {
+            "latitude": 40.7580,
+            "longitude": -73.9855,
+            "roadSegmentId": "RS-102"
+          },
+          "value": 32,
+          "unit": "vehicles",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:55Z"
+        }
+      ],
+      "buildings": [
+        {
+          "buildingId": "BLD-002",
+          "name": "Tech Innovation Center",
+          "type": "commercial",
+          "location": {
+            "latitude": 40.7589,
+            "longitude": -73.9851,
+            "address": "456 Innovation Boulevard"
+          },
+          "floors": 25,
+          "totalCapacity": 1200,
+          "currentOccupancy": 875,
+          "occupancyRate": 0.729,
+          "sensors": [
+        {
+          "sensorId": "BLD-002-TEMP-01",
+          "type": "temperature",
+          "floor": 12,
+          "value": 21.8,
+          "unit": "°C",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:40Z"
+        },
+        {
+          "sensorId": "BLD-002-HUMIDITY-01",
+          "type": "humidity",
+          "floor": 12,
+          "value": 42,
+          "unit": "%",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:40Z"
+        },
+        {
+          "sensorId": "BLD-002-ENERGY-01",
+          "type": "powerConsumption",
+          "value": 385.2,
+          "unit": "kW",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:58Z"
+        },
+        {
+          "sensorId": "BLD-002-ACCESS-01",
+          "type": "accessEvents",
+          "floor": 1,
+          "value": 23,
+          "unit": "events",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:45Z"
+        }
+      ],
+      "status": "operational"
+        }
+      ],
+      "weatherStations": [
+        {
+          "stationId": "WS-002",
+          "name": "Midtown Weather Station",
+          "location": {
+            "latitude": 40.7589,
+            "longitude": -73.9851,
+            "elevation": 20
+          },
+          "readings": {
+            "temperature": 17.8,
+            "humidity": 65,
+            "pressure": 1013.50,
+            "windSpeed": 18.2,
+            "windDirection": 240,
+            "precipitation": 0.0,
+            "cloudCover": 35,
+            "visibility": 12.0,
+            "uvIndex": 5,
+            "units": {
+              "temperature": "°C",
+              "humidity": "%",
+              "pressure": "hPa",
+              "windSpeed": "km/h",
+              "windDirection": "degrees",
+              "precipitation": "mm",
+              "cloudCover": "%",
+              "visibility": "km"
+            }
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:55Z"
+        }
+      ]
+    },
+    {
+      "districtId": "DIST-003",
+      "name": "Residential District",
+      "location": {
+        "centerLatitude": 40.7505,
+        "centerLongitude": -73.9934,
+        "boundaries": {
+          "north": 40.7580,
+          "south": 40.7430,
+          "east": -73.9860,
+          "west": -74.0000
+        }
+      },
+      "sensors": [
+        {
+          "sensorId": "PM25-003",
+          "type": "pm25",
+          "location": {
+            "latitude": 40.7505,
+            "longitude": -73.9934,
+            "elevation": 8
+          },
+          "value": 10.8,
+          "unit": "μg/m³",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:42Z"
+        },
+        {
+          "sensorId": "NOISE-003",
+          "type": "noise",
+          "location": {
+            "latitude": 40.7505,
+            "longitude": -73.9934,
+            "elevation": 8
+          },
+          "value": 58,
+          "unit": "dB",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:42Z"
+        },
+        {
+          "sensorId": "CAM-003",
+          "type": "trafficCamera",
+          "location": {
+            "latitude": 40.7500,
+            "longitude": -73.9940,
+            "roadSegmentId": "RS-105",
+            "direction": "southbound"
+          },
+          "value": 38,
+          "unit": "congestionLevel",
+          "metadata": {
+            "avgSpeed": 38,
+            "vehicleCount": 18,
+            "congestionStatus": "light"
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:52Z"
+        }
+      ],
+      "buildings": [
+        {
+          "buildingId": "BLD-003",
+          "name": "Residential Tower A",
+          "type": "residential",
+          "location": {
+            "latitude": 40.7505,
+            "longitude": -73.9934,
+            "address": "789 Park Avenue"
+          },
+          "floors": 40,
+          "totalCapacity": 800,
+          "currentOccupancy": 654,
+          "occupancyRate": 0.818,
+          "sensors": [
+        {
+          "sensorId": "BLD-003-TEMP-01",
+          "type": "temperature",
+          "floor": 20,
+          "value": 23.0,
+          "unit": "°C",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:35Z"
+        },
+        {
+          "sensorId": "BLD-003-HUMIDITY-01",
+          "type": "humidity",
+          "floor": 20,
+          "value": 48,
+          "unit": "%",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:35Z"
+        },
+        {
+          "sensorId": "BLD-003-WATER-01",
+          "type": "waterFlowRate",
+          "value": 45.3,
+          "unit": "L/min",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:50Z"
+        },
+        {
+          "sensorId": "BLD-003-PRESSURE-01",
+          "type": "waterPressure",
+          "value": 4.2,
+          "unit": "bar",
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:50Z"
+        }
+      ],
+      "status": "operational"
+        }
+      ],
+      "weatherStations": [
+        {
+          "stationId": "WS-003",
+          "name": "Residential Weather Station",
+          "location": {
+            "latitude": 40.7505,
+            "longitude": -73.9934,
+            "elevation": 10
+          },
+          "readings": {
+            "temperature": 19.2,
+            "humidity": 70,
+            "pressure": 1013.10,
+            "windSpeed": 15.8,
+            "windDirection": 210,
+            "precipitation": 0.0,
+            "cloudCover": 45,
+            "visibility": 9.5,
+            "uvIndex": 4,
+            "units": {
+              "temperature": "°C",
+              "humidity": "%",
+              "pressure": "hPa",
+              "windSpeed": "km/h",
+              "windDirection": "degrees",
+              "precipitation": "mm",
+              "cloudCover": "%",
+              "visibility": "km"
+            }
+          },
+          "status": "active",
+          "lastUpdated": "2025-12-04T10:29:58Z"
+        }
+      ]
+    }
+  ],
+  "cityGraph": {
+    "nodes": [
+      {
+        "nodeId": "N-001",
+        "type": "intersection",
+        "name": "Main St & 1st Ave",
+        "location": {
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "trafficLight": {
+          "status": "green",
+          "timeRemaining": 25,
+          "cycleTime": 90
+        }
+      },
+      {
+        "nodeId": "N-002",
+        "type": "intersection",
+        "name": "Main St & 2nd Ave",
+        "location": {
+          "latitude": 40.7138,
+          "longitude": -74.0050
+        },
+        "trafficLight": {
+          "status": "red",
+          "timeRemaining": 15,
+          "cycleTime": 90
+        }
+      },
+      {
+        "nodeId": "N-003",
+        "type": "intersection",
+        "name": "Broadway & 1st Ave",
+        "location": {
+          "latitude": 40.7145,
+          "longitude": -74.0070
+        },
+        "trafficLight": {
+          "status": "green",
+          "timeRemaining": 30,
+          "cycleTime": 120
+        }
+      },
+      {
+        "nodeId": "N-004",
+        "type": "intersection",
+        "name": "Broadway & 2nd Ave",
+        "location": {
+          "latitude": 40.7155,
+          "longitude": -74.0060
+        },
+        "trafficLight": {
+          "status": "yellow",
+          "timeRemaining": 5,
+          "cycleTime": 120
+        }
+      },
+      {
+        "nodeId": "N-005",
+        "type": "intersection",
+        "name": "Park Ave & 1st Ave",
+        "location": {
+          "latitude": 40.7125,
+          "longitude": -74.0080
+        },
+        "trafficLight": {
+          "status": "green",
+          "timeRemaining": 40,
+          "cycleTime": 90
+        }
+      }
+    ],
+    "edges": [
+      {
+        "edgeId": "E-001",
+        "roadSegmentId": "RS-101",
+        "name": "Main St (1st-2nd)",
+        "fromNode": "N-001",
+        "toNode": "N-002",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0060, 40.7128],
+            [-74.0050, 40.7138]
+          ]
+        },
+        "distance": 150,
+        "speedLimit": 50,
+        "lanes": 3,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 35,
+          "congestionLevel": "moderate",
+          "vehicleCount": 45,
+          "travelTime": 15.4,
+          "incidents": []
+        },
+        "lastUpdated": "2025-12-04T10:30:00Z"
+      },
+      {
+        "edgeId": "E-002",
+        "roadSegmentId": "RS-102",
+        "name": "Broadway (1st-2nd)",
+        "fromNode": "N-003",
+        "toNode": "N-004",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0070, 40.7145],
+            [-74.0060, 40.7155]
+          ]
+        },
+        "distance": 180,
+        "speedLimit": 50,
+        "lanes": 4,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 42,
+          "congestionLevel": "light",
+          "vehicleCount": 32,
+          "travelTime": 15.4,
+          "incidents": []
+        },
+        "lastUpdated": "2025-12-04T10:29:55Z"
+      },
+      {
+        "edgeId": "E-003",
+        "roadSegmentId": "RS-103",
+        "name": "1st Ave (Main-Broadway)",
+        "fromNode": "N-001",
+        "toNode": "N-003",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0060, 40.7128],
+            [-74.0070, 40.7145]
+          ]
+        },
+        "distance": 200,
+        "speedLimit": 50,
+        "lanes": 2,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 28,
+          "congestionLevel": "heavy",
+          "vehicleCount": 68,
+          "travelTime": 25.7,
+          "incidents": [
+            {
+              "incidentId": "INC-001",
+              "type": "construction",
+              "severity": "medium",
+              "description": "Lane closure for maintenance",
+              "reportedAt": "2025-12-04T08:00:00Z"
+            }
+          ]
+        },
+        "lastUpdated": "2025-12-04T10:30:00Z"
+      },
+      {
+        "edgeId": "E-004",
+        "roadSegmentId": "RS-104",
+        "name": "2nd Ave (Main-Broadway)",
+        "fromNode": "N-002",
+        "toNode": "N-004",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0050, 40.7138],
+            [-74.0060, 40.7155]
+          ]
+        },
+        "distance": 190,
+        "speedLimit": 50,
+        "lanes": 2,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 45,
+          "congestionLevel": "light",
+          "vehicleCount": 25,
+          "travelTime": 15.2,
+          "incidents": []
+        },
+        "lastUpdated": "2025-12-04T10:29:58Z"
+      },
+      {
+        "edgeId": "E-005",
+        "roadSegmentId": "RS-105",
+        "name": "Park Ave (Main-1st)",
+        "fromNode": "N-005",
+        "toNode": "N-001",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0080, 40.7125],
+            [-74.0060, 40.7128]
+          ]
+        },
+        "distance": 120,
+        "speedLimit": 40,
+        "lanes": 2,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 38,
+          "congestionLevel": "light",
+          "vehicleCount": 18,
+          "travelTime": 11.4,
+          "incidents": []
+        },
+        "lastUpdated": "2025-12-04T10:29:52Z"
+      },
+      {
+        "edgeId": "E-006",
+        "roadSegmentId": "RS-106",
+        "name": "Park Ave (Broadway-1st)",
+        "fromNode": "N-003",
+        "toNode": "N-005",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-74.0070, 40.7145],
+            [-74.0080, 40.7125]
+          ]
+        },
+        "distance": 140,
+        "speedLimit": 40,
+        "lanes": 2,
+        "direction": "bidirectional",
+        "trafficConditions": {
+          "averageSpeed": 35,
+          "congestionLevel": "moderate",
+          "vehicleCount": 30,
+          "travelTime": 14.4,
+          "incidents": []
+        },
+        "lastUpdated": "2025-12-04T10:29:50Z"
+      }
+    ]
+  },
+  "publicTransport": {
+    "buses": [
+      {
+        "busId": "BUS-101",
+        "route": "Route 1",
+        "location": {
+          "latitude": 40.7130,
+          "longitude": -74.0065,
+          "currentStop": "Main St & 1st Ave"
+        },
+        "speed": 25,
+        "occupancy": {
+          "current": 32,
+          "capacity": 50
+        },
+        "nextStop": "Main St & 2nd Ave",
+        "estimatedArrival": "2025-12-04T10:32:30Z",
+        "status": "on-time"
+      },
+      {
+        "busId": "BUS-102",
+        "route": "Route 2",
+        "location": {
+          "latitude": 40.7150,
+          "longitude": -74.0065,
+          "currentStop": "Broadway & 2nd Ave"
+        },
+        "speed": 30,
+        "occupancy": {
+          "current": 18,
+          "capacity": 50
+        },
+        "nextStop": "Broadway & 3rd Ave",
+        "estimatedArrival": "2025-12-04T10:33:00Z",
+        "status": "on-time"
+      }
+    ],
+    "stations": [
+      {
+        "stationId": "STA-001",
+        "name": "Central Station",
+        "type": "metro",
+        "location": {
+          "latitude": 40.7527,
+          "longitude": -73.9772
+        },
+        "platforms": 4,
+        "currentOccupancy": 234,
+        "sensors": [
+          {
+            "sensorId": "STA-001-CROWD-01",
+            "type": "crowdCount",
+            "value": 234,
+            "unit": "people",
+            "status": "active",
+            "lastUpdated": "2025-12-04T10:30:00Z"
+          }
+        ]
+      }
+    ]
+  },
+  "emergencyServices": {
+    "incidents": [
+      {
+        "incidentId": "EMG-001",
+        "type": "medical",
+        "priority": "high",
+        "location": {
+          "latitude": 40.7145,
+          "longitude": -74.0070,
+          "address": "Broadway & 1st Ave"
+        },
+        "reportedAt": "2025-12-04T10:15:00Z",
+        "respondingUnits": ["AMB-003"],
+        "status": "in-progress"
+      }
+    ],
+    "units": [
+      {
+        "unitId": "AMB-003",
+        "type": "ambulance",
+        "status": "responding",
+        "location": {
+          "latitude": 40.7140,
+          "longitude": -74.0065
+        },
+        "destination": {
+          "latitude": 40.7145,
+          "longitude": -74.0070
+        },
+        "estimatedArrival": "2025-12-04T10:33:00Z"
+      },
+      {
+        "unitId": "FIRE-001",
+        "type": "fire-truck",
+        "status": "available",
+        "location": {
+          "latitude": 40.7489,
+          "longitude": -73.9680
+        }
+      },
+      {
+        "unitId": "POL-005",
+        "type": "police",
+        "status": "patrol",
+        "location": {
+          "latitude": 40.7505,
+          "longitude": -73.9934
+        }
+      }
+    ]
+  }
+}
