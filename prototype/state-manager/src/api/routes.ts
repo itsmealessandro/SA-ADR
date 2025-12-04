@@ -12,7 +12,7 @@ export function createRoutes(
   /**
    * GET /health - Health check endpoint
    */
-  router.get('/health', async (req: Request, res: Response) => {
+  router.get('/health', async (_req: Request, res: Response) => {
     try {
       const redisConnected = await redisManager.isConnected();
       const mongoConnected = await snapshotManager.isConnected();
@@ -41,7 +41,7 @@ export function createRoutes(
   /**
    * GET /state - Get complete city state
    */
-  router.get('/state', async (req: Request, res: Response) => {
+  router.get('/state', async (_req: Request, res: Response) => {
     try {
       const state = await redisManager.getCompleteState();
       res.json(state);
@@ -54,7 +54,7 @@ export function createRoutes(
   /**
    * GET /state/districts - Get all districts
    */
-  router.get('/state/districts', async (req: Request, res: Response) => {
+  router.get('/state/districts', async (_req: Request, res: Response) => {
     try {
       const districts = await redisManager.getAllDistricts();
       res.json(districts);
@@ -167,7 +167,7 @@ export function createRoutes(
   /**
    * GET /state/publicTransport - Get public transport data
    */
-  router.get('/state/publicTransport', async (req: Request, res: Response) => {
+  router.get('/state/publicTransport', async (_req: Request, res: Response) => {
     try {
       const publicTransport = await redisManager.getPublicTransport();
       res.json(publicTransport || { buses: [], stations: [] });
@@ -180,7 +180,7 @@ export function createRoutes(
   /**
    * GET /state/emergencyServices - Get emergency services data
    */
-  router.get('/state/emergencyServices', async (req: Request, res: Response) => {
+  router.get('/state/emergencyServices', async (_req: Request, res: Response) => {
     try {
       const emergencyServices = await redisManager.getEmergencyServices();
       res.json(emergencyServices || { incidents: [], units: [] });
