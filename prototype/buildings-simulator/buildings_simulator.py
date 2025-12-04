@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 # Environment variables for configuration
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'buildings-sensor-data')
+KAFKA_TOPIC = os.getenv('KAFKA_TOPIC_BUILDINGS', 'buildings-monitoring')
 BUILDINGS_CONFIG_FILE = os.getenv('BUILDINGS_CONFIG_FILE', 
                                    os.path.join(os.path.dirname(__file__), 'config', 'buildings.json'))
 

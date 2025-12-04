@@ -39,7 +39,7 @@ class EdgeManager:
     """
     
     def __init__(self, district_id: str, edge_config: Dict, 
-                 kafka_producer: Any, kafka_topic: str, 
+                 kafka_producer: Any, kafka_topics: Dict[str, str], 
                  stop_event: threading.Event):
         """
         Initialize an Edge Manager.
@@ -48,7 +48,7 @@ class EdgeManager:
             district_id: ID of the district this edge belongs to
             edge_config: Configuration dict from city_config.json
             kafka_producer: Shared Kafka producer instance (thread-safe)
-            kafka_topic: Topic name for publishing sensor data
+            kafka_topics: Dictionary mapping sensor types to topic names
             stop_event: Threading event to signal shutdown
         """
         # Edge identification
@@ -60,7 +60,7 @@ class EdgeManager:
         
         # Kafka configuration
         self.kafka_producer = kafka_producer
-        self.kafka_topic = kafka_topic
+        self.kafka_topics = kafka_topics
         self.stop_event = stop_event
         
         # Initialize sensor simulators
@@ -152,8 +152,21 @@ class EdgeManager:
             True if sent successfully, False if buffered
         """
         try:
-            # Async send with timeout
-            future = self.kafka_producer.send(self.kafka_topic, value=data)
+            # Determine topic based on sensor type
+            sensor_type = data.get('sensor_type')
+            topic = self.kafka_topics.get(sensor_type)
+            
+            if not topic:
+                logger.error(f"[{self.edge_id}] No topic configured for sensor type: {sensor_type}")
+                return False
+                
+            # Async send with timeout and partition key
+            # Using edge_id as key ensures all data for this edge goes to same partition
+            future = self.kafka_producer.send(
+                topic, 
+                key=self.edge_id,  # Partition key
+                value=data
+            )
             future.get(timeout=10)  # Wait max 10 seconds
             return True
         except Exception as e:

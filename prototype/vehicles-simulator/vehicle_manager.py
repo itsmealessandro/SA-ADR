@@ -78,7 +78,11 @@ class VehicleManager:
             True if sent successfully, False if buffered
         """
         try:
-            future = self.kafka_producer.send(self.kafka_topic, value=data)
+            future = self.kafka_producer.send(
+                self.kafka_topic, 
+                key=self.vehicle_id,  # Partition key
+                value=data
+            )
             future.get(timeout=10)
             return True
         except Exception as e:

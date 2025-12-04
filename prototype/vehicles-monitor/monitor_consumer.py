@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Environment variables
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'vehicles-sensor-data')
+KAFKA_TOPIC = os.getenv('KAFKA_TOPIC_VEHICLES', 'vehicles-telemetry')
 KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID', 'vehicles-monitor-group')
 INFLUXDB_URL = os.getenv('INFLUXDB_URL', 'http://localhost:8086')
 INFLUXDB_TOKEN = os.getenv('INFLUXDB_TOKEN', '')

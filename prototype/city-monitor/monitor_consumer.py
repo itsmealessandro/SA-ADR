@@ -5,11 +5,15 @@ Consumes sensor data from Kafka, validates, transforms, and writes to InfluxDB.
 """
 
 import os
+import sys
 import time
 import json
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+
+# Add parent directory to path to import common module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 from influxdb_client import InfluxDBClient, Point, WritePrecision
@@ -49,28 +53,21 @@ class MonitorConsumer:
         logger.info("Monitor Consumer initialized")
     
     def _init_kafka_consumer(self) -> KafkaConsumer:
-        """Initialize Kafka consumer with retry logic."""
-        max_retries = 10
-        retry_delay = 5
+        """Initialize Kafka consumer with retry logic for multiple topics."""
+        from common.kafka_utils import create_multi_topic_consumer
         
-        for attempt in range(max_retries):
-            try:
-                consumer = KafkaConsumer(
-                    KAFKA_TOPIC,
-                    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                    group_id=KAFKA_GROUP_ID,
-                    auto_offset_reset='earliest',  # Start from beginning if no offset
-                    enable_auto_commit=True,
-                    value_deserializer=lambda m: json.loads(m.decode('utf-8'))
-                )
-                logger.info(f"Connected to Kafka topic: {KAFKA_TOPIC}")
-                return consumer
-            except Exception as e:
-                logger.warning(f"Kafka connection attempt {attempt + 1}/{max_retries} failed: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(retry_delay)
-                else:
-                    raise
+        # Get all city topics
+        topics = [
+            os.getenv('KAFKA_TOPIC_SPEED', 'city-speed-sensors'),
+            os.getenv('KAFKA_TOPIC_WEATHER', 'city-weather-sensors'),
+            os.getenv('KAFKA_TOPIC_CAMERA', 'city-camera-sensors')
+        ]
+        
+        return create_multi_topic_consumer(
+            bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+            topics=topics,
+            group_id=KAFKA_GROUP_ID
+        )
     
     def _init_influxdb_client(self) -> InfluxDBClient:
         """Initialize InfluxDB client with retry logic."""

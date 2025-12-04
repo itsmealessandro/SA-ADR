@@ -77,7 +77,9 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: city-sensor-data
+      KAFKA_TOPIC_SPEED: city-speed-sensors
+      KAFKA_TOPIC_WEATHER: city-weather-sensors
+      KAFKA_TOPIC_CAMERA: city-camera-sensors
       CITY_CONFIG_FILE: /app/config/city_config.json
     networks:
       - ems-network
@@ -94,7 +96,7 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: vehicles-sensor-data
+      KAFKA_TOPIC_VEHICLES: vehicles-telemetry
       VEHICLES_CONFIG_FILE: /app/config/vehicles.json
     networks:
       - ems-network
@@ -111,7 +113,7 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: buildings-sensor-data
+      KAFKA_TOPIC_BUILDINGS: buildings-monitoring
       BUILDINGS_CONFIG_FILE: /app/config/buildings.json
     networks:
       - ems-network
@@ -122,8 +124,8 @@ services:
   # City Monitor - Processes city sensor data
   city-monitor:
     build:
-      context: ./city-monitor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./city-monitor/Dockerfile
     container_name: ems-city-monitor
     depends_on:
       kafka:
@@ -132,7 +134,9 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: city-sensor-data
+      KAFKA_TOPIC_SPEED: city-speed-sensors
+      KAFKA_TOPIC_WEATHER: city-weather-sensors
+      KAFKA_TOPIC_CAMERA: city-camera-sensors
       KAFKA_GROUP_ID: city-monitor-group
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_TOKEN: ems-super-secret-token-12345
@@ -145,8 +149,8 @@ services:
   # Vehicles Monitor - Processes vehicle tracking data
   vehicles-monitor:
     build:
-      context: ./vehicles-monitor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./vehicles-monitor/Dockerfile
     container_name: ems-vehicles-monitor
     depends_on:
       kafka:
@@ -155,7 +159,7 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: vehicles-sensor-data
+      KAFKA_TOPIC_VEHICLES: vehicles-telemetry
       KAFKA_GROUP_ID: vehicles-monitor-group
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_TOKEN: ems-super-secret-token-12345
@@ -168,8 +172,8 @@ services:
   # Buildings Monitor - Processes building sensor data
   buildings-monitor:
     build:
-      context: ./buildings-monitor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./buildings-monitor/Dockerfile
     container_name: ems-buildings-monitor
     depends_on:
       kafka:
@@ -178,7 +182,7 @@ services:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_TOPIC: buildings-sensor-data
+      KAFKA_TOPIC_BUILDINGS: buildings-monitoring
       KAFKA_GROUP_ID: buildings-monitor-group
       INFLUXDB_URL: http://influxdb:8086
       INFLUXDB_TOKEN: ems-super-secret-token-12345

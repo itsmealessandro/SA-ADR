@@ -50,7 +50,7 @@ Il sistema è completamente **modularizzato** in 3 componenti principali + rispe
    - Topic: `vehicles-sensor-data`
 
 3. **`ems-buildings`** - Buildings Simulator
-   - 5 edifici monitorati (ospedale, scuola, uffici, basilica, **università**)
+   - 5 edifici monitorati (ospedale, scuola, uffici, basilica, università)
    - Air quality, acustica, uscite emergenza, ascensori
    - Topic: `buildings-sensor-data`
 

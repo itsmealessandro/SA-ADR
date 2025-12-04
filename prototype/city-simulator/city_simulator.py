@@ -42,8 +42,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Environment variables for configuration
+# Environment variables for configuration
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'city-sensor-data')  # Updated topic for city component
+# Updated topic configuration for sensor-type architecture
+KAFKA_TOPICS = {
+    'speed': os.getenv('KAFKA_TOPIC_SPEED', 'city-speed-sensors'),
+    'weather': os.getenv('KAFKA_TOPIC_WEATHER', 'city-weather-sensors'),
+    'camera': os.getenv('KAFKA_TOPIC_CAMERA', 'city-camera-sensors')
+}
 CITY_CONFIG_FILE = os.getenv('CITY_CONFIG_FILE', 
                               os.path.join(os.path.dirname(__file__), 'config', 'city_config.json'))
 
@@ -139,7 +145,7 @@ class CitySimulator:
         # Re-configure for JSON serialization (common uses string serialization)
         producer.config['value_serializer'] = lambda v: json.dumps(v).encode('utf-8')
         
-        logger.info(f"✓ City simulator Kafka producer ready (topic: {KAFKA_TOPIC})")
+        logger.info(f"✓ City simulator Kafka producer ready (topics: {list(KAFKA_TOPICS.values())})")
         return producer
     
     def _initialize_edges(self):
@@ -161,7 +167,7 @@ class CitySimulator:
                     district_id=district_id,
                     edge_config=edge_config,
                     kafka_producer=self.kafka_producer,
-                    kafka_topic=KAFKA_TOPIC,
+                    kafka_topics=KAFKA_TOPICS,
                     stop_event=self.stop_event
                 )
                 
@@ -206,7 +212,7 @@ class CitySimulator:
         logger.info(f"   Monitor Interval: {self.monitor_interval}s")
         logger.info(f"   Districts: {len(self.city_config['districts'])}")
         logger.info(f"   Edges: {len(self.edge_managers)}")
-        logger.info(f"   Kafka Topic: {KAFKA_TOPIC}")
+        logger.info(f"   Kafka Topics: {KAFKA_TOPICS}")
         logger.info("=" * 70)
         
         try:
