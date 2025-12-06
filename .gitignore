@@ -17,3 +17,5 @@ Thumbs.db
 *.iml
 .vscode/
 
+node_modules/
+dist/
