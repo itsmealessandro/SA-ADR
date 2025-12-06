@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import http from 'http';
 import { ApiServer } from './api/server';
 import { KafkaConsumerManager } from './kafka/consumer';
+import { StatePublisher } from './kafka/publisher';
 import { RedisStateManager } from './state/redis-manager';
 import { SnapshotManager } from './state/snapshot-manager';
 import { logger } from './utils/logger';
@@ -14,6 +15,7 @@ class StateManagerService {
   private redisManager!: RedisStateManager;
   private snapshotManager!: SnapshotManager;
   private kafkaConsumer!: KafkaConsumerManager;
+  private statePublisher!: StatePublisher;
   private apiServer!: ApiServer;
   private wsHandler!: WebSocketHandler;
   private httpServer!: http.Server;
@@ -45,6 +47,10 @@ class StateManagerService {
       this.kafkaConsumer.start().catch((error) => {
         logger.error('Kafka consumer error:', error);
       });
+
+      // Initialize and start State Publisher
+      this.statePublisher = new StatePublisher(this.redisManager);
+      await this.statePublisher.start();
 
       // Start API server
       this.apiServer = new ApiServer(this.redisManager, this.snapshotManager);
@@ -94,6 +100,11 @@ class StateManagerService {
         // Stop Kafka consumer
         if (this.kafkaConsumer) {
           await this.kafkaConsumer.stop();
+        }
+
+        // Stop State Publisher
+        if (this.statePublisher) {
+          await this.statePublisher.stop();
         }
 
         // Save final snapshot

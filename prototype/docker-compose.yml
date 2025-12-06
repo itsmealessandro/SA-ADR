@@ -103,6 +103,8 @@ services:
       SNAPSHOT_INTERVAL_MS: 300000
       SNAPSHOT_MIN_CHANGES: 100
       WS_UPDATE_BUFFER_MS: 100
+      FULL_STATE_PUBLISH_INTERVAL_MS: 60000
+      INCREMENTAL_STATE_PUBLISH_INTERVAL_MS: 5000
     networks:
       - digital-twin-network
     restart: unless-stopped
