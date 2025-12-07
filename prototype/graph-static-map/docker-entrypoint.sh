@@ -19,8 +19,13 @@ echo "Bounding box: $XMIN,$YMIN to $XMAX,$YMAX"
 echo "Release: $RELEASE"
 echo ""
 
-# Download segments using DuckDB
-duckdb -c "
+# Check if segment file already exists
+if [ -f "${OUTPUT_DIR}/laquila_segment.geojson" ]; then
+    echo "✅ Segment data already exists, skipping download"
+else
+    echo "Downloading segments..."
+    # Download segments using DuckDB
+    duckdb -c "
 install spatial;
 LOAD spatial;
 SET s3_region='us-west-2';
@@ -41,18 +46,22 @@ COPY (
 ) TO '${OUTPUT_DIR}/laquila_segment.geojson' WITH (FORMAT GDAL, DRIVER 'GeoJSON');
 "
 
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to download segment data"
-    exit 1
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to download segment data"
+        exit 1
+    fi
+
+    echo "✅ Segments downloaded successfully"
 fi
 
-echo "✅ Segments downloaded successfully"
-
-# Download connectors using DuckDB
+# Check if connector file already exists
 echo ""
-echo "Downloading road connectors from Overture Maps..."
-
-duckdb -c "
+if [ -f "${OUTPUT_DIR}/laquila_connector.geojson" ]; then
+    echo "✅ Connector data already exists, skipping download"
+else
+    echo "Downloading connectors..."
+    # Download connectors using DuckDB
+    duckdb -c "
 install spatial;
 LOAD spatial;
 SET s3_region='us-west-2';
@@ -71,12 +80,13 @@ COPY (
 ) TO '${OUTPUT_DIR}/laquila_connector.geojson' WITH (FORMAT GDAL, DRIVER 'GeoJSON');
 "
 
-if [ $? -ne 0 ]; then
-    echo "⚠️  Warning: Failed to download connector data (continuing anyway)"
-    # Create an empty GeoJSON file as placeholder
-    echo '{"type":"FeatureCollection","features":[]}' > "${OUTPUT_DIR}/laquila_connector.geojson"
-else
-    echo "✅ Connectors downloaded successfully"
+    if [ $? -ne 0 ]; then
+        echo "⚠️  Warning: Failed to download connector data (continuing anyway)"
+        # Create an empty GeoJSON file as placeholder
+        echo '{"type":"FeatureCollection","features":[]}' > "${OUTPUT_DIR}/laquila_connector.geojson"
+    else
+        echo "✅ Connectors downloaded successfully"
+    fi
 fi
 
 # List downloaded files for debugging

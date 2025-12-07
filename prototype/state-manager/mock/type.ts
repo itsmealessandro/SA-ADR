@@ -16,6 +16,8 @@ export interface Edge {
   edgeId:            string;
   roadSegmentId:     string;
   name:              string;
+  class:             string;
+  length:            number;
   fromNode:          string;
   toNode:            string;
   geometry:          Geometry;

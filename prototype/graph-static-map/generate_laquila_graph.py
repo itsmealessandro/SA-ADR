@@ -67,7 +67,6 @@ def main():
     nodes_gdf, edges_gdf = c2g.segments_to_graph(
         segments_gdf=processed_segments,
         multigraph=False,
-        as_nx=False
     )
     
     print(f"Generated graph with {len(nodes_gdf)} nodes and {len(edges_gdf)} edges")
@@ -76,6 +75,10 @@ def main():
     print("\nConverting back to WGS84 for export...")
     nodes_gdf = nodes_gdf.to_crs("EPSG:4326")
     edges_gdf = edges_gdf.to_crs("EPSG:4326")
+    
+    # Drop extra geometry columns (barrier_geometry) that can't be exported to GeoJSON
+    if 'barrier_geometry' in edges_gdf.columns:
+        edges_gdf = edges_gdf.drop(columns=['barrier_geometry'])
     
     # Export to GeoJSON format
     print("\nExporting to GeoJSON...")
@@ -102,7 +105,7 @@ def create_custom_format(nodes_gdf, edges_gdf, output_file):
     # Process nodes
     for idx, node in nodes_gdf.iterrows():
         node_data = {
-            "nodeId": f"N-{idx:03d}",
+            "nodeId": f"N-{idx:05d}",
             "type": "intersection",
             "name": f"Node {idx}",
             "location": {
@@ -113,11 +116,11 @@ def create_custom_format(nodes_gdf, edges_gdf, output_file):
         nodes.append(node_data)
     
     # Create node ID mapping
-    node_id_map = {idx: f"N-{idx:03d}" for idx in nodes_gdf.index}
+    node_id_map = {idx: f"N-{idx:05d}" for idx in nodes_gdf.index}
     
-    # Process edges (limit to first 1000 to avoid huge files)
+  
     edge_count = 0
-    for idx, edge in edges_gdf.head(1000).iterrows():
+    for idx, edge in edges_gdf.iterrows():
         from_node = idx[0] if isinstance(idx, tuple) else edge.get('from_node_id', None)
         to_node = idx[1] if isinstance(idx, tuple) else edge.get('to_node_id', None)
         
@@ -132,14 +135,22 @@ def create_custom_format(nodes_gdf, edges_gdf, output_file):
         distance = round(geom.length, 1) if hasattr(geom, 'length') else 100
         
         # Get road attributes if available
-        road_name = edge.get('names', {}).get('primary', f"Road {edge_count}") if hasattr(edge.get('names', {}), 'get') else f"Road {edge_count}"
+        road_name = f"Road {edge_count} - " + edge.get("name", "") if edge.get("name") else f"Road {edge_count}"
+        road_class = edge.get("class", "unknown")
         speed_limit = 50  # Default speed limit
         lanes = 2  # Default lanes
         
+        # Generate random traffic conditions
+        import random
+        from datetime import datetime
+        congestion_levels = ['light', 'moderate', 'heavy'];
+        
         edge_data = {
-            "edgeId": f"E-{edge_count:03d}",
-            "roadSegmentId": f"RS-{edge_count:03d}",
+            "edgeId": f"E-{edge_count:05d}",
+            "roadSegmentId": f"RS-{edge_count:05d}",
             "name": road_name,
+            "class": road_class,
+            "length": round(edge.get("length", 0),2),
             "fromNode": node_id_map.get(from_node, f"N-{from_node}"),
             "toNode": node_id_map.get(to_node, f"N-{to_node}"),
             "geometry": {
@@ -149,14 +160,22 @@ def create_custom_format(nodes_gdf, edges_gdf, output_file):
             "distance": distance,
             "speedLimit": speed_limit,
             "lanes": lanes,
-            "direction": "bidirectional"
+            "direction": "bidirectional",
+            "trafficConditions": {
+                "averageSpeed": round(20 + random.random() * 40, 2),
+                "congestionLevel": congestion_levels[random.randint(0, 2)],
+                "vehicleCount": random.randint(0, 100),
+                "travelTime": round(5 + random.random() * 15, 2),
+                "incidents": []
+            },
+            "timestamp": datetime.now().isoformat()
         }
         edges.append(edge_data)
         edge_count += 1
     
     # Create final output
     graph_data = {
-        "nodes": nodes[:100],  # Limit nodes to 100 for readability
+        "nodes": nodes,
         "edges": edges
     }
     

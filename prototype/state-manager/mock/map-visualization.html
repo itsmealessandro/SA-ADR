@@ -175,6 +175,8 @@
                         
                         layer.bindPopup(`
                             <h3>${props.name}</h3>
+                            <p><strong>Class:</strong> ${props.class}</p>
+                            <p><strong>Length:</strong> ${props.length}</p>
                             <p><strong>Congestion:</strong> ${props.congestionLevel}</p>
                             <p><strong>Avg Speed:</strong> ${props.averageSpeed} km/h (limit: ${props.speedLimit} km/h)</p>
                             <p><strong>Vehicles:</strong> ${props.vehicleCount}</p>
@@ -281,7 +283,7 @@
             })
             .catch(error => {
                 console.error('Error loading digital twin data:', error);
-                alert('Failed to load digital twin data. Make sure city-digital-twin.json is in the same directory.');
+                alert('Failed to load digital twin data. ' + error);
             });
         
         // Helper function to get sensor colors

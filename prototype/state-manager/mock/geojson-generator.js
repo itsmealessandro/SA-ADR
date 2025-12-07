@@ -52,6 +52,8 @@ function generateRoadCongestionGeoJSON(districts, districtId = null) {
           "edgeId": edge.edgeId,
           "roadSegmentId": edge.roadSegmentId,
           "name": edge.name,
+          "class": edge.class,
+          "length": edge.length,
           "fromNode": edge.fromNode,
           "toNode": edge.toNode,
           "distance": edge.distance,
@@ -257,11 +259,6 @@ function generateIntersectionGeoJSON(districts, districtId = null) {
           "nodeId": node.nodeId,
           "type": node.type,
           "name": node.name,
-          "districtId": district.districtId,
-          "districtName": district.name,
-          "trafficLightStatus": node.trafficLight.status,
-          "timeRemaining": node.trafficLight.timeRemaining,
-          "cycleTime": node.trafficLight.cycleTime
         },
         "geometry": {
           "type": "Point",
