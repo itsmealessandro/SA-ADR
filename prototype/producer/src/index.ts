@@ -50,9 +50,6 @@ class DataProducer {
     
     // Initialize fixed locations for static sensors
     this.initializeSensorLocations();
-    
-    // Fetch city graph and initialize vehicle routes (async, will complete before first message)
-    this.initializeAsync();
   }
 
   /**
@@ -260,6 +257,9 @@ class DataProducer {
   async start(): Promise<void> {
     await this.producer.connect();
     console.log('Data producer connected to Kafka');
+
+    // Wait for city graph to load before starting
+    await this.initializeAsync();
 
     // Send messages periodically
     setInterval(() => {

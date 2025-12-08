@@ -31,7 +31,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-96 max-h-[600px] bg-white rounded-lg shadow-xl border border-gray-200 z-50 flex flex-col"
+      className="absolute right-0 top-full mt-2 w-96 max-h-[600px] bg-white rounded-lg shadow-xl border border-gray-200 z-[1000] flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
