@@ -117,21 +117,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /state/districts/{id}/graph:
+  /state/graph:
     get:
       tags:
         - State
-      summary: Get district graph
-      description: Retrieve the road network graph for a specific district
-      operationId: getDistrictGraph
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: District identifier
-          schema:
-            type: string
-            example: district-1
+      summary: Get city graph
+      description: Retrieve the road network graph for the entire city
+      operationId: getCityGraph
       responses:
         '200':
           description: Graph retrieved successfully
@@ -140,7 +132,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GraphResponse'
         '404':
-          description: District or graph not found
+          description: No state available
           content:
             application/json:
               schema:
@@ -325,6 +317,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/District'
+        cityGraph:
+          $ref: '#/components/schemas/Graph'
         publicTransport:
           $ref: '#/components/schemas/PublicTransport'
         emergencyServices:
@@ -361,8 +355,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Sensor'
-        graph:
-          $ref: '#/components/schemas/Graph'
 
     BuildingsResponse:
       type: object

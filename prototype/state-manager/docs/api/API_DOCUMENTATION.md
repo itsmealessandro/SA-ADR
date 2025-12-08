@@ -18,7 +18,7 @@ The State Manager API provides RESTful endpoints to query the digital twin state
   - [Get Complete State](#get-complete-state)
   - [Get Districts](#get-districts)
   - [Get District by ID](#get-district-by-id)
-  - [Get District Graph](#get-district-graph)
+  - [Get City Graph](#get-city-graph)
   - [Get Buildings](#get-buildings)
   - [Get Sensors](#get-sensors)
   - [Get Public Transport](#get-public-transport)
@@ -159,32 +159,50 @@ curl http://localhost:3000/api/state/districts/district-1
 
 ---
 
-### Get District Graph
+### Get City Graph
 
-Retrieve the road network graph for a specific district.
+Retrieve the road network graph for the entire city.
 
-**Endpoint:** `GET /state/districts/:id/graph`
-
-**Parameters:**
-- `id` (path parameter): District identifier
+**Endpoint:** `GET /state/graph`
 
 **Response:**
 ```json
 {
   "graph": {
-    "nodes": [...],
-    "edges": [...]
+    "nodes": [
+      {
+        "id": "node-1",
+        "location": {
+          "lat": 42.3498,
+          "lon": 13.3995
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "node-1",
+        "target": "node-2",
+        "length": 150.5,
+        "trafficData": {
+          "averageSpeed": 45.5,
+          "congestionLevel": "medium",
+          "vehicleCount": 25,
+          "travelTime": 3.5
+        }
+      }
+    ]
   }
 }
 ```
 
 **Status Codes:**
 - `200 OK`: Graph retrieved successfully
-- `404 Not Found`: District or graph not found
+- `404 Not Found`: No state available
 
 **Example:**
 ```bash
-curl http://localhost:3000/api/state/districts/district-1/graph
+curl http://localhost:3000/api/state/graph
 ```
 
 ---
@@ -431,7 +449,6 @@ interface District {
   name: string;
   buildings: Building[];
   sensors: Sensor[];
-  graph?: Graph;
 }
 ```
 
@@ -635,8 +652,8 @@ curl http://localhost:3000/api/state
 # Get specific district
 curl http://localhost:3000/api/state/districts/district-1
 
-# Get district graph
-curl http://localhost:3000/api/state/districts/district-1/graph
+# Get city graph
+curl http://localhost:3000/api/state/graph
 
 # Get all sensors
 curl http://localhost:3000/api/state/sensors

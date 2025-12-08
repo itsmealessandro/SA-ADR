@@ -168,7 +168,6 @@ Ingests real-time data from multiple city systems, updates an in-memory cache, a
 **Data Format**:
 ```json
 {
-  "districtId": "district-02",
   "edgeId": "E-00015",
   "trafficConditions": {
     "averageSpeed": 35.5,
@@ -182,7 +181,7 @@ Ingests real-time data from multiple city systems, updates an in-memory cache, a
 ```
 
 **Update Logic**:
-- Finds edge by `edgeId` in district graph
+- Finds edge by `edgeId` in city graph
 - Replaces `trafficConditions` object
 - Updates `lastUpdated` timestamp
 
@@ -400,7 +399,7 @@ Periodically publishes the complete city digital twin state and incremental upda
           "lastUpdated": "2025-12-08T10:29:50.000Z"
         }
       ],
-      "districtGraph": {
+      "cityGraph": {
         "nodes": [
           {
             "nodeId": "N-00001",
@@ -530,7 +529,7 @@ Periodically publishes the complete city digital twin state and incremental upda
             }
           ]
         },
-        "districtGraph": {
+        "cityGraph": {
           "edges": {
             "_t": "a",
             "0": {

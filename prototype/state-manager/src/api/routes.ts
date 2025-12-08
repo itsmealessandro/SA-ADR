@@ -85,26 +85,6 @@ export function createRoutes(
   });
 
   /**
-   * GET /state/districts/:districtId/graph - Get district road graph
-   */
-  router.get('/state/districts/:districtId/graph', async (req: Request, res: Response) => {
-    try {
-      const { districtId } = req.params;
-      const district = await redisManager.getDistrictState(districtId);
-
-      if (!district) {
-        res.status(404).json({ error: 'District not found' });
-        return;
-      }
-
-      res.json(district.districtGraph);
-    } catch (error) {
-      logger.error('Error retrieving district graph:', error);
-      res.status(500).json({ error: 'Failed to retrieve district graph' });
-    }
-  });
-
-  /**
    * GET /state/districts/:districtId/sensors - Get district sensors
    */
   router.get('/state/districts/:districtId/sensors', async (req: Request, res: Response) => {
@@ -187,6 +167,19 @@ export function createRoutes(
     } catch (error) {
       logger.error('Error retrieving emergency services:', error);
       res.status(500).json({ error: 'Failed to retrieve emergency services' });
+    }
+  });
+
+  /**
+   * GET /state/graph - Get city-wide traffic graph
+   */
+  router.get('/state/graph', async (_req: Request, res: Response) => {
+    try {
+      const cityGraph = await redisManager.getCityGraph();
+      res.json(cityGraph || { nodes: [], edges: [] });
+    } catch (error) {
+      logger.error('Error retrieving city graph:', error);
+      res.status(500).json({ error: 'Failed to retrieve city graph' });
     }
   });
 
