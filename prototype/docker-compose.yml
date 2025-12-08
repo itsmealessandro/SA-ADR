@@ -16,16 +16,34 @@ services:
     networks:
       - digital-twin-network
 
-  # MongoDB - Historical snapshots
-  mongodb:
+  # MongoDB - State Manager historical snapshots
+  mongodb-state:
     image: mongo:6
-    container_name: dt-mongodb
+    container_name: dt-mongodb-state
     ports:
       - "27017:27017"
     volumes:
-      - mongodb-data:/data/db
+      - mongodb-state-data:/data/db
     environment:
       MONGO_INITDB_DATABASE: digital_twin
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - digital-twin-network
+
+  # MongoDB - Notification Manager storage
+  mongodb-notifications:
+    image: mongo:6
+    container_name: dt-mongodb-notifications
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb-notifications-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: notifications
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -81,7 +99,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      mongodb:
+      mongodb-state:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -91,7 +109,7 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_URI: mongodb://mongodb-state:27017
       MONGODB_DATABASE: digital_twin
       KAFKA_BROKERS: kafka:9092
       KAFKA_GROUP_ID: state-manager-group
@@ -136,12 +154,16 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+      mongodb-notifications:
+        condition: service_healthy
     ports:
       - "3002:3002"
     environment:
       KAFKA_BROKERS: kafka:9092
       KAFKA_GROUP_ID: notification-manager-group
       KAFKA_CLIENT_ID: notification-manager
+      MONGODB_URI: mongodb://mongodb-notifications:27017
+      MONGODB_DATABASE: notifications
       API_PORT: 3002
       NODE_ENV: development
       LOG_LEVEL: info
@@ -170,7 +192,8 @@ services:
 
 volumes:
   redis-data:
-  mongodb-data:
+  mongodb-state-data:
+  mongodb-notifications-data:
 
 networks:
   digital-twin-network:

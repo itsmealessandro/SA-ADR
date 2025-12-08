@@ -144,7 +144,12 @@ export class KafkaConsumerManager {
       await commitOffsetsIfNecessary();
       
       const duration = Date.now() - startTime;
-      logger.info(`Processed batch: ${batch.messages.length} messages in ${duration}ms (${Math.round(batch.messages.length / (duration / 1000))} msg/s)`);
+      const throughput = duration > 0 ? Math.round(batch.messages.length / (duration / 1000)) : batch.messages.length;
+      
+      // Only log if batch has more than 1 message or took significant time
+      if (batch.messages.length > 1 || duration > 10) {
+        logger.info(`Processed batch: ${batch.messages.length} messages in ${duration}ms (${throughput} msg/s)`);
+      }
       
     } catch (error) {
       logger.error('Error handling batch:', error);
