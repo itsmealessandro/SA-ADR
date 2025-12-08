@@ -1,4 +1,3 @@
-import { CloudSun } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
 import type { WeatherStation } from '../../types';
 import { createLucideIcon } from '../../utils/leafletIcon';
@@ -7,8 +6,18 @@ interface WeatherStationMarkersProps {
   stations: WeatherStation[];
 }
 
-const createWeatherIcon = () => {
-  return createLucideIcon(CloudSun, { backgroundColor: '#8b5cf6' });
+// Create icons based on status
+const createWeatherIcon = (status: string) => {
+  const colors: Record<string, string> = {
+    active: '#8b5cf6',
+    inactive: '#6b7280',
+    error: '#ef4444',
+    maintenance: '#f97316',
+  };
+  
+  const backgroundColor = colors[status] || '#8b5cf6';
+  
+  return createLucideIcon('cloud', { backgroundColor });
 };
 
 export function WeatherStationMarkers({ stations }: WeatherStationMarkersProps) {
@@ -18,7 +27,7 @@ export function WeatherStationMarkers({ stations }: WeatherStationMarkersProps) 
         <Marker
           key={station.stationId}
           position={[station.location.latitude, station.location.longitude]}
-          icon={createWeatherIcon()}
+          icon={createWeatherIcon(station.status)}
         >
           <Popup>
             <div className="p-2">
@@ -27,7 +36,16 @@ export function WeatherStationMarkers({ stations }: WeatherStationMarkersProps) 
               </h3>
               <p className="text-xs text-gray-600 mb-1">
                 <strong>Status:</strong>{' '}
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <span
+                  className={`
+                    px-2 py-0.5 rounded-full text-xs font-medium
+                    ${
+                      station.status === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }
+                  `}
+                >
                   {station.status}
                 </span>
               </p>

@@ -1,5 +1,5 @@
-import { Bus as BusIcon } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import type { Bus } from '../../types';
 import { createLucideIcon } from '../../utils/leafletIcon';
 
@@ -18,12 +18,12 @@ const createBusIcon = (status: string) => {
   
   const backgroundColor = colors[status.toLowerCase()] || '#3b82f6';
   
-  return createLucideIcon(BusIcon, { backgroundColor });
+  return createLucideIcon('bus', { backgroundColor });
 };
 
 export function BusMarkers({ buses }: BusMarkersProps) {
   return (
-    <>
+    <MarkerClusterGroup>
       {buses.map((bus) => (
         <Marker
           key={bus.busId}
@@ -74,6 +74,6 @@ export function BusMarkers({ buses }: BusMarkersProps) {
           </Popup>
         </Marker>
       ))}
-    </>
+    </MarkerClusterGroup>
   );
 }

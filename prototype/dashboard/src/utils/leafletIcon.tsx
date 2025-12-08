@@ -1,7 +1,11 @@
+import {
+  BuildingOfficeIcon,
+  CloudIcon,
+  SignalIcon,
+  TruckIcon
+} from '@heroicons/react/24/solid';
 import { divIcon } from 'leaflet';
-import type { LucideIcon } from 'lucide-react';
-import { flushSync } from 'react-dom';
-import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 interface IconOptions {
   color?: string;
@@ -9,8 +13,12 @@ interface IconOptions {
   size?: number;
 }
 
+/**
+ * Creates a Leaflet DivIcon with Heroicons SVG icons
+ * This approach uses Heroicons library for consistent, high-quality icons
+ */
 export function createLucideIcon(
-  Icon: LucideIcon,
+  iconName: string,
   options: IconOptions = {}
 ): L.DivIcon {
   const {
@@ -19,35 +27,38 @@ export function createLucideIcon(
     size = 32,
   } = options;
 
-  // Create temporary div to render React component
-  const tempDiv = document.createElement('div');
-  const root = createRoot(tempDiv);
-  
-  flushSync(() => {
-    root.render(
-      <div
-        style={{
-          backgroundColor,
-          borderRadius: '50%',
-          width: `${size}px`,
-          height: `${size}px`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '2px solid white',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-        }}
-      >
-        <Icon
-          size={size * 0.6}
-          color={color}
-          strokeWidth={2.5}
-        />
-      </div>
-    );
-  });
+  // Map icon names to Heroicons components
+  const iconComponents: Record<string, React.ComponentType<{ className?: string }>> = {
+    radio: SignalIcon,
+    bus: TruckIcon,
+    cloud: CloudIcon,
+    building: BuildingOfficeIcon,
+  };
 
-  const iconHtml = tempDiv.innerHTML;
+  const IconComponent = iconComponents[iconName] || SignalIcon;
+
+  // Render the icon to static HTML with color applied via CSS
+  const iconSvg = renderToStaticMarkup(
+    <IconComponent className="w-full h-full" />
+  );
+
+  const iconHtml = `
+    <div style="
+      background-color: ${backgroundColor};
+      border-radius: 50%;
+      width: ${size}px;
+      height: ${size}px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      padding: ${size * 0.2}px;
+      color: ${color};
+    ">
+      ${iconSvg}
+    </div>
+  `;
 
   return divIcon({
     html: iconHtml,

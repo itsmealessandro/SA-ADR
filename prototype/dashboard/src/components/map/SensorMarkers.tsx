@@ -1,5 +1,5 @@
-import { Radio } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import type { Sensor } from '../../types';
 import { createLucideIcon } from '../../utils/leafletIcon';
 
@@ -18,12 +18,12 @@ const createSensorIcon = (status: string) => {
   
   const backgroundColor = colors[status] || '#3b82f6';
   
-  return createLucideIcon(Radio, { backgroundColor });
+  return createLucideIcon('radio', { backgroundColor });
 };
 
 export function SensorMarkers({ sensors }: SensorMarkersProps) {
   return (
-    <>
+    <MarkerClusterGroup>
       {sensors.filter(s => s.location).map((sensor) => (
         <Marker
           key={sensor.sensorId}
@@ -70,6 +70,6 @@ export function SensorMarkers({ sensors }: SensorMarkersProps) {
           </Popup>
         </Marker>
       ))}
-    </>
+    </MarkerClusterGroup>
   );
 }

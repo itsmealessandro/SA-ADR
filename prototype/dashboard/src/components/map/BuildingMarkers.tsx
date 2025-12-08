@@ -1,5 +1,7 @@
-import { CircleMarker, Popup } from 'react-leaflet';
+import { Marker, Popup } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import type { Building } from '../../types';
+import { createLucideIcon } from '../../utils/leafletIcon';
 
 interface BuildingMarkersProps {
   buildings: Building[];
@@ -7,21 +9,16 @@ interface BuildingMarkersProps {
 
 export function BuildingMarkers({ buildings }: BuildingMarkersProps) {
   return (
-    <>
+    <MarkerClusterGroup>
       {buildings.map((building) => {
         const occupancyRate = building.occupancyRate;
         const color = occupancyRate > 0.8 ? '#F44336' : occupancyRate > 0.5 ? '#FFC107' : '#4CAF50';
 
         return (
-          <CircleMarker
+          <Marker
             key={building.buildingId}
-            center={[building.location.latitude, building.location.longitude]}
-            radius={10}
-            fillColor={color}
-            color="#FFF"
-            weight={2}
-            opacity={1}
-            fillOpacity={0.7}
+            position={[building.location.latitude, building.location.longitude]}
+            icon={createLucideIcon('building', { backgroundColor: color })}
           >
             <Popup>
               <div className="p-2">
@@ -62,9 +59,9 @@ export function BuildingMarkers({ buildings }: BuildingMarkersProps) {
                 )}
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         );
       })}
-    </>
+    </MarkerClusterGroup>
   );
 }
