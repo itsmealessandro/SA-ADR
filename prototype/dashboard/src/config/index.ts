@@ -16,7 +16,7 @@ export const config = {
       lng: 13.3995,
     },
     zoom: 13,
-    minZoom: 1,
+    minZoom: 4,
     maxZoom: 24,
   },
   
