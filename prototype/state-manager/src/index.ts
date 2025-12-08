@@ -63,9 +63,9 @@ class StateManagerService {
       // Initialize WebSocket handler
       this.wsHandler = new WebSocketHandler(this.httpServer, this.redisManager);
 
-      // Start WebSocket server
-      this.httpServer.listen(wsPort, () => {
-        logger.info(`WebSocket server listening on port ${wsPort}`);
+      // Start WebSocket server on all interfaces
+      this.httpServer.listen(wsPort, '0.0.0.0', () => {
+        logger.info(`WebSocket server listening on 0.0.0.0:${wsPort}`);
       });
 
       logger.info('Digital Twin State Manager Service started successfully');

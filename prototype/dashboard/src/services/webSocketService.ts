@@ -1,5 +1,6 @@
 import type { Delta } from 'jsondiffpatch';
 import * as jsondiffpatch from 'jsondiffpatch';
+import { io, Socket } from 'socket.io-client';
 import { config } from '../config';
 import type { CityState, StateUpdate, WebSocketMessage } from '../types';
 
@@ -10,8 +11,7 @@ type StateUpdateHandler = (update: StateUpdate) => void;
 type ConnectionStateHandler = (state: ConnectionState, error?: Error) => void;
 
 export class WebSocketService {
-  private ws: WebSocket | null = null;
-  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private socket: Socket | null = null;
   private readonly url: string;
   private readonly diffPatcher = jsondiffpatch.create();
   
@@ -20,12 +20,6 @@ export class WebSocketService {
   private connectionStateHandlers: Set<ConnectionStateHandler> = new Set();
   
   private connectionState: ConnectionState = 'disconnected';
-  private reconnectAttempts = 0;
-  private readonly maxReconnectAttempts = 10;
-  private readonly reconnectDelay = 3000; // 3 seconds
-  
-  private pingInterval: ReturnType<typeof setInterval> | null = null;
-  private readonly pingIntervalMs = 30000; // 30 seconds
 
   constructor(url?: string) {
     this.url = url || config.stateManagerWsUrl;
@@ -35,21 +29,26 @@ export class WebSocketService {
    * Connect to the WebSocket server
    */
   connect(): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn('WebSocket already connected');
+    if (this.socket?.connected) {
+      console.warn('Socket.IO already connected');
       return;
     }
 
     this.setConnectionState('connecting');
-    console.log(`Connecting to WebSocket: ${this.url}`);
+    console.log(`Connecting to Socket.IO server: ${this.url}`);
 
     try {
-      this.ws = new WebSocket(this.url);
+      this.socket = io(this.url, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 3000,
+      });
+      
       this.setupEventHandlers();
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      console.error('Failed to create Socket.IO connection:', error);
       this.setConnectionState('error', error as Error);
-      this.scheduleReconnect();
     }
   }
 
@@ -57,17 +56,9 @@ export class WebSocketService {
    * Disconnect from the WebSocket server
    */
   disconnect(): void {
-    this.reconnectAttempts = this.maxReconnectAttempts; // Prevent reconnection
-    this.clearPingInterval();
-    
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
 
     this.setConnectionState('disconnected');
@@ -114,88 +105,69 @@ export class WebSocketService {
   }
 
   private setupEventHandlers(): void {
-    if (!this.ws) return;
+    if (!this.socket) return;
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      this.reconnectAttempts = 0;
+    this.socket.on('connect', () => {
+      console.log('Socket.IO connected');
       this.setConnectionState('connected');
-      this.startPingInterval();
-    };
+    });
 
-    this.ws.onmessage = (event) => {
-      try {
-        const message: WebSocketMessage = JSON.parse(event.data);
-        
-        // Notify all message handlers
-        this.messageHandlers.forEach(handler => handler(message));
+    this.socket.on('initial-state', (initialState: CityState) => {
+      console.log('Received initial state');
+      const message: WebSocketMessage = {
+        type: 'full_state',
+        state: initialState,
+        timestamp: new Date().toISOString(),
+      };
+      this.messageHandlers.forEach(handler => handler(message));
+    });
 
-        // Handle different message types
-        if (message.type === 'incremental_update' && message.patch) {
-          const update: StateUpdate = {
-            timestamp: message.timestamp || new Date().toISOString(),
-            patch: message.patch,
-          };
-          this.stateUpdateHandlers.forEach(handler => handler(update));
-        } else if (message.type === 'error') {
-          console.error('WebSocket error message:', message.error);
-        }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
-      }
-    };
-
-    this.ws.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      this.setConnectionState('error', new Error('WebSocket error'));
-    };
-
-    this.ws.onclose = (event) => {
-      console.log(`WebSocket closed: ${event.code} ${event.reason}`);
-      this.clearPingInterval();
-      this.setConnectionState('disconnected');
+    this.socket.on('state-update', (delta: unknown) => {
+      console.log('Received state update (delta)');
+      const update: StateUpdate = {
+        timestamp: new Date().toISOString(),
+        patch: delta,
+      };
+      this.stateUpdateHandlers.forEach(handler => handler(update));
       
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.scheduleReconnect();
-      }
-    };
-  }
+      // Also notify message handlers
+      const message: WebSocketMessage = {
+        type: 'incremental_update',
+        patch: delta,
+        timestamp: new Date().toISOString(),
+      };
+      this.messageHandlers.forEach(handler => handler(message));
+    });
 
-  private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      return;
-    }
+    this.socket.on('district-update', (district: unknown) => {
+      console.log('Received district update');
+      const message: WebSocketMessage = {
+        type: 'district_update',
+        data: district,
+        timestamp: new Date().toISOString(),
+      };
+      this.messageHandlers.forEach(handler => handler(message));
+    });
 
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.min(this.reconnectAttempts, 5);
-    
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect();
-    }, delay);
+    this.socket.on('error', (error: unknown) => {
+      console.error('Socket.IO error:', error);
+      this.setConnectionState('error', error as Error);
+    });
+
+    this.socket.on('disconnect', (reason: string) => {
+      console.log(`Socket.IO disconnected: ${reason}`);
+      this.setConnectionState('disconnected');
+    });
+
+    this.socket.on('connect_error', (error: Error) => {
+      console.error('Socket.IO connection error:', error);
+      this.setConnectionState('error', error);
+    });
   }
 
   private setConnectionState(state: ConnectionState, error?: Error): void {
     this.connectionState = state;
     this.connectionStateHandlers.forEach(handler => handler(state, error));
-  }
-
-  private startPingInterval(): void {
-    this.clearPingInterval();
-    this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }));
-      }
-    }, this.pingIntervalMs);
-  }
-
-  private clearPingInterval(): void {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
   }
 }
 

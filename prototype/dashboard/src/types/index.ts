@@ -288,8 +288,9 @@ export interface NotificationsResponse {
 // ==================== WebSocket Message Types ====================
 
 export interface WebSocketMessage {
-  type: 'full_state' | 'incremental_update' | 'error' | 'connection' | 'ping';
+  type: 'full_state' | 'incremental_update' | 'error' | 'connection' | 'ping' | 'district_update';
   data?: unknown;
+  state?: CityState; // Full state for initial connection
   patch?: unknown; // jsondiffpatch patch object
   timestamp?: string;
   error?: string;
