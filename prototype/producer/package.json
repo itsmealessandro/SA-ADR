@@ -8,16 +8,21 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts"
   },
-  "keywords": ["kafka", "mock", "data-producer"],
+  "keywords": [
+    "kafka",
+    "mock",
+    "data-producer"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "kafkajs": "^2.2.4",
-    "dotenv": "^16.3.1"
+    "axios": "^1.13.2",
+    "dotenv": "^16.3.1",
+    "kafkajs": "^2.2.4"
   },
   "devDependencies": {
-    "@types/node": "^20.10.6",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
+    "@types/node": "^20.19.25",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }

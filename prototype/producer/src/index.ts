@@ -1,3 +1,4 @@
+import axios from 'axios';
 import dotenv from 'dotenv';
 import { Kafka, Producer } from 'kafkajs';
 
@@ -16,6 +17,17 @@ class DataProducer {
 
   // Fixed locations for static sensors (they should not move)
   private sensorLocations: Map<string, { latitude: number; longitude: number }> = new Map();
+
+  // City graph from state manager
+  private cityGraph: { nodes: any[]; edges: any[] } = { nodes: [], edges: [] };
+  
+  // Vehicle state tracking for realistic movement
+  private vehicleStates: Map<string, {
+    currentEdgeIndex: number;
+    progress: number; // 0-1 along current edge
+    route: number[]; // indices of edges in route
+    speed: number; // km/h
+  }> = new Map();
 
   constructor() {
     const brokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
@@ -38,6 +50,68 @@ class DataProducer {
     
     // Initialize fixed locations for static sensors
     this.initializeSensorLocations();
+    
+    // Fetch city graph and initialize vehicle routes (async, will complete before first message)
+    this.initializeAsync();
+  }
+
+  /**
+   * Async initialization for fetching city graph and setting up vehicles
+   */
+  private async initializeAsync(): Promise<void> {
+    try {
+      await this.fetchCityGraph();
+      this.initializeVehicleRoutes();
+      console.log('City graph loaded and vehicle routes initialized');
+    } catch (error) {
+      console.error('Error during async initialization:', error);
+      console.log('Falling back to random movement for vehicles');
+    }
+  }
+
+  /**
+   * Fetch city graph from state manager API
+   */
+  private async fetchCityGraph(): Promise<void> {
+    const stateManagerUrl = process.env.STATE_MANAGER_URL || 'http://localhost:3000';
+    try {
+      const response = await axios.get(`${stateManagerUrl}/state/graph`);
+      this.cityGraph = response.data;
+      console.log(`Loaded city graph with ${this.cityGraph.edges.length} edges and ${this.cityGraph.nodes.length} nodes`);
+    } catch (error) {
+      console.error('Failed to fetch city graph:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Initialize vehicle routes along actual road network
+   */
+  private initializeVehicleRoutes(): void {
+    if (this.cityGraph.edges.length === 0) {
+      console.warn('No edges in city graph, cannot initialize vehicle routes');
+      return;
+    }
+
+    // Initialize 3 buses with random routes
+    for (let i = 0; i < 3; i++) {
+      const busId = `BUS-${i + 1}`;
+      
+      // Create a random route of 10-20 edges
+      const routeLength = 10 + Math.floor(Math.random() * 10);
+      const route: number[] = [];
+      
+      for (let j = 0; j < routeLength; j++) {
+        route.push(Math.floor(Math.random() * this.cityGraph.edges.length));
+      }
+      
+      this.vehicleStates.set(busId, {
+        currentEdgeIndex: 0,
+        progress: Math.random(), // Start at random position on first edge
+        route,
+        speed: 30 + Math.random() * 20, // 30-50 km/h
+      });
+    }
   }
 
   /**
@@ -94,6 +168,93 @@ class DataProducer {
       this.edgeIds.push(`E-${paddedNum}`);
       this.roadSegmentIds.push(`RS-${paddedNum}`);
     }
+  }
+
+  /**
+   * Update vehicle positions along their routes
+   */
+  private updateVehiclePositions(): void {
+    if (this.cityGraph.edges.length === 0) return;
+
+    this.vehicleStates.forEach((state, busId) => {
+      // Calculate distance moved based on speed and time interval
+      // speed is in km/h, interval is in ms
+      const distanceKm = (state.speed * this.intervalMs) / (1000 * 3600);
+      
+      // Get current edge
+      const currentEdge = this.cityGraph.edges[state.route[state.currentEdgeIndex]];
+      if (!currentEdge || !currentEdge.geometry) return;
+      
+      // Estimate edge length in km (rough approximation)
+      const edgeLength = this.estimateEdgeLength(currentEdge.geometry);
+      
+      // Update progress along edge
+      const progressIncrement = edgeLength > 0 ? distanceKm / edgeLength : 0.1;
+      state.progress += progressIncrement;
+      
+      // Move to next edge if we've completed current one
+      if (state.progress >= 1.0) {
+        state.progress = 0;
+        state.currentEdgeIndex = (state.currentEdgeIndex + 1) % state.route.length;
+      }
+    });
+  }
+
+  /**
+   * Estimate edge length in km from geometry coordinates
+   */
+  private estimateEdgeLength(geometry: number[][]): number {
+    if (!geometry || geometry.length < 2) return 1; // Default 1km if no geometry
+    
+    let totalDistance = 0;
+    for (let i = 1; i < geometry.length; i++) {
+      const [lon1, lat1] = geometry[i - 1];
+      const [lon2, lat2] = geometry[i];
+      totalDistance += this.haversineDistance(lat1, lon1, lat2, lon2);
+    }
+    return totalDistance;
+  }
+
+  /**
+   * Calculate distance between two lat/lon points in km (Haversine formula)
+   */
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /**
+   * Interpolate position along edge geometry based on progress (0-1)
+   */
+  private interpolatePosition(geometry: number[][], progress: number): { latitude: number; longitude: number } {
+    if (!geometry || geometry.length === 0) {
+      return { latitude: 42.35, longitude: 13.40 }; // Default L'Aquila center
+    }
+    
+    if (geometry.length === 1) {
+      return { latitude: geometry[0][1], longitude: geometry[0][0] };
+    }
+    
+    // Find which segment we're on
+    const segmentCount = geometry.length - 1;
+    const segmentIndex = Math.min(Math.floor(progress * segmentCount), segmentCount - 1);
+    const segmentProgress = (progress * segmentCount) - segmentIndex;
+    
+    // Interpolate between two points
+    const [lon1, lat1] = geometry[segmentIndex];
+    const [lon2, lat2] = geometry[segmentIndex + 1];
+    
+    const latitude = lat1 + (lat2 - lat1) * segmentProgress;
+    const longitude = lon1 + (lon2 - lon1) * segmentProgress;
+    
+    return { latitude, longitude };
   }
 
   async start(): Promise<void> {
@@ -330,22 +491,53 @@ class DataProducer {
   private generatePublicTransportData(): Promise<any>[] {
     const messages = [];
 
-    // Generate bus GPS updates
+    // Update vehicle positions before generating data
+    this.updateVehiclePositions();
+
+    // Generate bus GPS updates with realistic positions
     for (let i = 0; i < 3; i++) {
+      const busId = `BUS-${i + 1}`;
+      const vehicleState = this.vehicleStates.get(busId);
+      
+      let location;
+      let speed;
+      
+      if (vehicleState && this.cityGraph.edges.length > 0) {
+        // Get current edge and interpolate position
+        const currentEdge = this.cityGraph.edges[vehicleState.route[vehicleState.currentEdgeIndex]];
+        if (currentEdge && currentEdge.geometry) {
+          location = this.interpolatePosition(currentEdge.geometry, vehicleState.progress);
+          speed = vehicleState.speed;
+        } else {
+          // Fallback to random if edge not found
+          location = {
+            latitude: 42.34 + Math.random() * 0.04,
+            longitude: 13.39 + Math.random() * 0.06,
+          };
+          speed = 10 + Math.random() * 40;
+        }
+      } else {
+        // Fallback to random if no vehicle state (graph not loaded)
+        location = {
+          latitude: 42.34 + Math.random() * 0.04,
+          longitude: 13.39 + Math.random() * 0.06,
+        };
+        speed = 10 + Math.random() * 40;
+      }
+      
       messages.push(
         this.producer.send({
           topic: 'transport.gps',
           messages: [
             {
               value: JSON.stringify({
-                busId: `BUS-${i + 1}`,
+                busId,
                 route: `Route-${i + 1}`,
                 location: {
-                  latitude: 42.34 + Math.random() * 0.04,
-                  longitude: 13.39 + Math.random() * 0.06,
+                  ...location,
                   currentStop: `STOP-${Math.floor(Math.random() * 20)}`,
                 },
-                speed: 10 + Math.random() * 40,
+                speed,
                 occupancy: {
                   current: Math.floor(Math.random() * 50),
                   capacity: 50,
