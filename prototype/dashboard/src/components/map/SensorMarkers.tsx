@@ -1,6 +1,7 @@
-import { Icon } from 'leaflet';
+import { Radio } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
 import type { Sensor } from '../../types';
+import { createLucideIcon } from '../../utils/leafletIcon';
 
 interface SensorMarkersProps {
   sensors: Sensor[];
@@ -9,22 +10,15 @@ interface SensorMarkersProps {
 // Create icons based on status
 const createSensorIcon = (status: string) => {
   const colors: Record<string, string> = {
-    active: 'green',
-    inactive: 'gray',
-    error: 'red',
-    degraded: 'orange',
+    active: '#10b981',
+    inactive: '#6b7280',
+    error: '#ef4444',
+    degraded: '#f97316',
   };
   
-  const color = colors[status] || 'blue';
+  const backgroundColor = colors[status] || '#3b82f6';
   
-  return new Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  });
+  return createLucideIcon(Radio, { backgroundColor });
 };
 
 export function SensorMarkers({ sensors }: SensorMarkersProps) {

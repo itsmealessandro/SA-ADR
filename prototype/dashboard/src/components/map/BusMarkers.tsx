@@ -1,6 +1,7 @@
-import { Icon } from 'leaflet';
+import { Bus as BusIcon } from 'lucide-react';
 import { Marker, Popup } from 'react-leaflet';
 import type { Bus } from '../../types';
+import { createLucideIcon } from '../../utils/leafletIcon';
 
 interface BusMarkersProps {
   buses: Bus[];
@@ -9,22 +10,15 @@ interface BusMarkersProps {
 // Create icons based on bus status
 const createBusIcon = (status: string) => {
   const colors: Record<string, string> = {
-    operational: 'green',
-    active: 'green',
-    inactive: 'gray',
-    maintenance: 'orange',
+    operational: '#10b981',
+    active: '#10b981',
+    inactive: '#6b7280',
+    maintenance: '#f97316',
   };
   
-  const color = colors[status.toLowerCase()] || 'blue';
+  const backgroundColor = colors[status.toLowerCase()] || '#3b82f6';
   
-  return new Icon({
-    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  });
+  return createLucideIcon(BusIcon, { backgroundColor });
 };
 
 export function BusMarkers({ buses }: BusMarkersProps) {
