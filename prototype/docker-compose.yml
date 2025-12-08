@@ -134,6 +134,8 @@ services:
       dockerfile: Dockerfile
     container_name: dt-data-producer
     depends_on:
+      state-manager:
+        condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
