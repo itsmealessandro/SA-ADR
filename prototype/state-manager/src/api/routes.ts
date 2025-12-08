@@ -190,5 +190,44 @@ export function createRoutes(
     }
   });
 
+  /**
+   * GET /snapshots/latest - Get the latest snapshot
+   */
+  router.get('/snapshots/latest', async (_req: Request, res: Response) => {
+    try {
+      const snapshot = await snapshotManager.getLatestSnapshot();
+      
+      if (!snapshot) {
+        res.status(404).json({ error: 'No snapshots available' });
+        return;
+      }
+
+      res.json({ snapshot });
+    } catch (error) {
+      logger.error('Error retrieving latest snapshot:', error);
+      res.status(500).json({ error: 'Failed to retrieve latest snapshot' });
+    }
+  });
+
+  /**
+   * GET /snapshots/:id - Get a specific snapshot by ID
+   */
+  router.get('/snapshots/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const snapshot = await snapshotManager.getSnapshot(id);
+      
+      if (!snapshot) {
+        res.status(404).json({ error: 'Snapshot not found' });
+        return;
+      }
+
+      res.json({ snapshot });
+    } catch (error) {
+      logger.error('Error retrieving snapshot:', error);
+      res.status(500).json({ error: 'Failed to retrieve snapshot' });
+    }
+  });
+
   return router;
 }

@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from 'mongodb';
+import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
 import { City } from '../types';
 import { logger } from '../utils/logger';
 
@@ -81,6 +81,31 @@ export class SnapshotManager {
       return state as any as City;
     } catch (error) {
       logger.error('Error retrieving latest snapshot:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get a specific snapshot by ID
+   */
+  async getSnapshot(id: string): Promise<City | null> {
+    if (!this.collection) {
+      logger.error('MongoDB collection not initialized');
+      return null;
+    }
+
+    try {
+      const snapshot = await this.collection.findOne({ _id: new ObjectId(id) });
+
+      if (!snapshot) {
+        return null;
+      }
+
+      // Remove MongoDB _id field
+      const { _id, snapshotTimestamp, ...state } = snapshot;
+      return state as any as City;
+    } catch (error) {
+      logger.error('Error retrieving snapshot by ID:', error);
       return null;
     }
   }

@@ -1,0 +1,621 @@
+openapi: 3.0.3
+info:
+  title: State Manager API
+  description: |
+    RESTful API for querying the digital twin state of L'Aquila city.
+    Provides access to real-time city data including districts, buildings, 
+    sensors, public transport, and emergency services.
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://api.example.com/api
+    description: Production server
+
+tags:
+  - name: Health
+    description: Server health check endpoints
+  - name: State
+    description: City state query endpoints
+  - name: Snapshots
+    description: Historical state snapshot endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API server is running and responsive
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /state:
+    get:
+      tags:
+        - State
+      summary: Get complete city state
+      description: Retrieve the complete current state of the city digital twin
+      operationId: getCompleteState
+      responses:
+        '200':
+          description: State retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CityStateResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts:
+    get:
+      tags:
+        - State
+      summary: Get all districts
+      description: Retrieve all districts in the city
+      operationId: getDistricts
+      responses:
+        '200':
+          description: Districts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistrictsResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts/{id}:
+    get:
+      tags:
+        - State
+      summary: Get district by ID
+      description: Retrieve a specific district by its ID
+      operationId: getDistrictById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: District identifier
+          schema:
+            type: string
+            example: district-1
+      responses:
+        '200':
+          description: District retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistrictResponse'
+        '404':
+          description: District not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts/{id}/graph:
+    get:
+      tags:
+        - State
+      summary: Get district graph
+      description: Retrieve the road network graph for a specific district
+      operationId: getDistrictGraph
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: District identifier
+          schema:
+            type: string
+            example: district-1
+      responses:
+        '200':
+          description: Graph retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphResponse'
+        '404':
+          description: District or graph not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/buildings:
+    get:
+      tags:
+        - State
+      summary: Get all buildings
+      description: Retrieve all buildings in the city
+      operationId: getBuildings
+      responses:
+        '200':
+          description: Buildings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildingsResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/sensors:
+    get:
+      tags:
+        - State
+      summary: Get all sensors
+      description: Retrieve all sensors in the city
+      operationId: getSensors
+      responses:
+        '200':
+          description: Sensors retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorsResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/public-transport:
+    get:
+      tags:
+        - State
+      summary: Get public transport data
+      description: Retrieve public transport information including buses and status
+      operationId: getPublicTransport
+      responses:
+        '200':
+          description: Transport data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicTransportResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/emergency-services:
+    get:
+      tags:
+        - State
+      summary: Get emergency services data
+      description: Retrieve emergency services information including vehicles and incidents
+      operationId: getEmergencyServices
+      responses:
+        '200':
+          description: Emergency data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyServicesResponse'
+        '404':
+          description: No state available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /snapshots/{id}:
+    get:
+      tags:
+        - Snapshots
+      summary: Get state snapshot by ID
+      description: Retrieve a specific historical state snapshot by ID
+      operationId: getSnapshotById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Snapshot identifier
+          schema:
+            type: string
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Snapshot retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotResponse'
+        '404':
+          description: Snapshot not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /snapshots/latest:
+    get:
+      tags:
+        - Snapshots
+      summary: Get latest snapshot
+      description: Retrieve the most recent state snapshot
+      operationId: getLatestSnapshot
+      responses:
+        '200':
+          description: Latest snapshot retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotResponse'
+        '404':
+          description: No snapshots available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-12-08T10:30:00.000Z'
+
+    CityStateResponse:
+      type: object
+      properties:
+        city:
+          $ref: '#/components/schemas/CityState'
+
+    CityState:
+      type: object
+      properties:
+        name:
+          type: string
+          example: L'Aquila
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-12-08T10:30:00.000Z'
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/District'
+        publicTransport:
+          $ref: '#/components/schemas/PublicTransport'
+        emergencyServices:
+          $ref: '#/components/schemas/EmergencyServices'
+
+    DistrictsResponse:
+      type: object
+      properties:
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/District'
+
+    DistrictResponse:
+      type: object
+      properties:
+        district:
+          $ref: '#/components/schemas/District'
+
+    District:
+      type: object
+      properties:
+        id:
+          type: string
+          example: district-1
+        name:
+          type: string
+          example: Centro Storico
+        buildings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Building'
+        sensors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sensor'
+        graph:
+          $ref: '#/components/schemas/Graph'
+
+    BuildingsResponse:
+      type: object
+      properties:
+        buildings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Building'
+
+    Building:
+      type: object
+      properties:
+        id:
+          type: string
+          example: building-1
+        type:
+          type: string
+          example: residential
+        occupancy:
+          type: integer
+          example: 150
+        energyConsumption:
+          type: number
+          format: float
+          example: 250.5
+        location:
+          $ref: '#/components/schemas/Location'
+
+    SensorsResponse:
+      type: object
+      properties:
+        sensors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sensor'
+
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: string
+          example: sensor-1
+        type:
+          type: string
+          example: temperature
+        value:
+          type: number
+          format: float
+          example: 22.5
+        unit:
+          type: string
+          example: celsius
+        location:
+          $ref: '#/components/schemas/Location'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-12-08T10:30:00.000Z'
+
+    GraphResponse:
+      type: object
+      properties:
+        graph:
+          $ref: '#/components/schemas/Graph'
+
+    Graph:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/Edge'
+
+    Node:
+      type: object
+      properties:
+        id:
+          type: string
+          example: node-1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Edge:
+      type: object
+      properties:
+        id:
+          type: string
+          example: edge-1
+        source:
+          type: string
+          example: node-1
+        target:
+          type: string
+          example: node-2
+        length:
+          type: number
+          format: float
+          example: 150.5
+        trafficData:
+          $ref: '#/components/schemas/TrafficData'
+
+    TrafficData:
+      type: object
+      properties:
+        averageSpeed:
+          type: number
+          format: float
+          example: 45.5
+        congestionLevel:
+          type: string
+          enum: [low, medium, high]
+          example: medium
+        vehicleCount:
+          type: integer
+          example: 25
+        travelTime:
+          type: number
+          format: float
+          example: 3.5
+
+    PublicTransportResponse:
+      type: object
+      properties:
+        publicTransport:
+          $ref: '#/components/schemas/PublicTransport'
+
+    PublicTransport:
+      type: object
+      properties:
+        buses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bus'
+
+    Bus:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bus-1
+        route:
+          type: string
+          example: Line 1
+        location:
+          $ref: '#/components/schemas/Location'
+        passengers:
+          type: integer
+          example: 25
+        capacity:
+          type: integer
+          example: 50
+        status:
+          type: string
+          enum: [on-time, delayed, off-route]
+          example: on-time
+
+    EmergencyServicesResponse:
+      type: object
+      properties:
+        emergencyServices:
+          $ref: '#/components/schemas/EmergencyServices'
+
+    EmergencyServices:
+      type: object
+      properties:
+        vehicles:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmergencyVehicle'
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+
+    EmergencyVehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          example: ambulance-1
+        type:
+          type: string
+          enum: [ambulance, fire-truck, police]
+          example: ambulance
+        status:
+          type: string
+          enum: [available, dispatched, on-scene, returning]
+          example: available
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          example: incident-1
+        type:
+          type: string
+          enum: [medical, fire, accident, other]
+          example: medical
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: high
+        location:
+          $ref: '#/components/schemas/Location'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-12-08T10:25:00.000Z'
+
+    SnapshotResponse:
+      type: object
+      properties:
+        snapshot:
+          $ref: '#/components/schemas/Snapshot'
+
+    Snapshot:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 507f1f77bcf86cd799439011
+        state:
+          $ref: '#/components/schemas/CityState'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-12-08T10:30:00.000Z'
+        version:
+          type: integer
+          example: 1
+
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+          example: 42.3498
+        lon:
+          type: number
+          format: double
+          example: 13.3995
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Resource not found
