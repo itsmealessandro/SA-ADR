@@ -14,6 +14,9 @@ class DataProducer {
   private edgeIds: string[] = [];
   private roadSegmentIds: string[] = [];
 
+  // Fixed locations for static sensors (they should not move)
+  private sensorLocations: Map<string, { latitude: number; longitude: number }> = new Map();
+
   constructor() {
     const brokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
     const clientId = process.env.KAFKA_CLIENT_ID || 'data-producer';
@@ -32,6 +35,49 @@ class DataProducer {
 
     // Generate edge and road segment IDs (sample 500 edges from the full range)
     this.generateEdgeIds();
+    
+    // Initialize fixed locations for static sensors
+    this.initializeSensorLocations();
+  }
+
+  /**
+   * Initialize fixed locations for static sensors
+   * These sensors should not move from their positions
+   */
+  private initializeSensorLocations(): void {
+    // Environmental sensors - multiple per district at fixed locations
+    const sensorTypes = ['pm25', 'pm10', 'no2', 'co', 'o3', 'temperature', 'humidity'];
+    
+    for (const districtId of this.districts) {
+      const districtIndex = this.districts.indexOf(districtId);
+      const baseLatitude = 42.34 + (districtIndex * 0.015);
+      const baseLongitude = 13.39 + (districtIndex * 0.02);
+      
+      // Create 20 environmental sensors per district
+      for (let i = 0; i < 20; i++) {
+        const sensorType = sensorTypes[i % sensorTypes.length];
+        const sensorId = `${sensorType.toUpperCase()}-${districtId}-${i}`;
+        this.sensorLocations.set(sensorId, {
+          latitude: baseLatitude + (Math.floor(i / 5) * 0.003),
+          longitude: baseLongitude + ((i % 5) * 0.004),
+        });
+      }
+    }
+
+    // Traffic cameras - 30 per district at fixed locations
+    for (const districtId of this.districts) {
+      const districtIndex = this.districts.indexOf(districtId);
+      const baseLatitude = 42.34 + (districtIndex * 0.015);
+      const baseLongitude = 13.39 + (districtIndex * 0.02);
+      
+      for (let i = 0; i < 30; i++) {
+        const sensorId = `CAM-${districtId}-${i}`;
+        this.sensorLocations.set(sensorId, {
+          latitude: baseLatitude + (Math.floor(i / 6) * 0.002),
+          longitude: baseLongitude + ((i % 6) * 0.003),
+        });
+      }
+    }
   }
 
   /**
@@ -97,62 +143,71 @@ class DataProducer {
 
   private generateSensorData(): Promise<any>[] {
     const messages = [];
+    const sensorTypes = ['pm25', 'pm10', 'no2', 'co', 'o3', 'temperature', 'humidity'];
 
     for (const districtId of this.districts) {
-      // Environmental sensors
-      messages.push(
-        this.producer.send({
-          topic: 'sensors.environmental',
-          messages: [
-            {
-              key: districtId,
-              value: JSON.stringify({
-                districtId,
-                sensorId: `PM25-${districtId}`,
-                type: 'pm25',
-                value: Math.random() * 50 + 10,
-                unit: 'μg/m³',
-                status: 'active',
-                lastUpdated: new Date().toISOString(),
-                location: {
-                  latitude: 42.34 + Math.random() * 0.04,
-                  longitude: 13.39 + Math.random() * 0.06,
-                },
-              }),
-            },
-          ],
-        })
-      );
+      // Generate data for 5 random environmental sensors per update (out of 20 total)
+      for (let i = 0; i < 5; i++) {
+        const sensorIndex = Math.floor(Math.random() * 20);
+        const sensorType = sensorTypes[sensorIndex % sensorTypes.length];
+        const sensorId = `${sensorType.toUpperCase()}-${districtId}-${sensorIndex}`;
+        const location = this.sensorLocations.get(sensorId)!;
+        
+        // Environmental sensors
+        messages.push(
+          this.producer.send({
+            topic: 'sensors.environmental',
+            messages: [
+              {
+                key: districtId,
+                value: JSON.stringify({
+                  districtId,
+                  sensorId,
+                  type: sensorType,
+                  value: Math.random() * 50 + 10,
+                  unit: sensorType.includes('pm') ? 'μg/m³' : sensorType === 'temperature' ? '°C' : '%',
+                  status: 'active',
+                  lastUpdated: new Date().toISOString(),
+                  location,
+                }),
+              },
+            ],
+          })
+        );
+      }
 
-      // Traffic sensors
-      messages.push(
-        this.producer.send({
-          topic: 'sensors.traffic',
-          messages: [
-            {
-              key: districtId,
-              value: JSON.stringify({
-                districtId,
-                sensorId: `CAM-${districtId}-${Math.floor(Math.random() * 10)}`,
-                type: 'trafficCamera',
-                value: Math.random() * 100,
-                unit: 'vehicles/min',
-                status: 'active',
-                lastUpdated: new Date().toISOString(),
-                location: {
-                  latitude: 42.34 + Math.random() * 0.04,
-                  longitude: 13.39 + Math.random() * 0.06,
-                },
-                metadata: {
-                  avgSpeed: 30 + Math.random() * 40,
-                  vehicleCount: Math.floor(Math.random() * 50),
-                  congestionStatus: ['light', 'moderate', 'heavy'][Math.floor(Math.random() * 3)],
-                },
-              }),
-            },
-          ],
-        })
-      );
+      // Generate data for 3 random traffic cameras per update (out of 30 total)
+      for (let i = 0; i < 3; i++) {
+        const cameraIndex = Math.floor(Math.random() * 30);
+        const cameraSensorId = `CAM-${districtId}-${cameraIndex}`;
+        const cameraLocation = this.sensorLocations.get(cameraSensorId)!;
+        
+        messages.push(
+          this.producer.send({
+            topic: 'sensors.traffic',
+            messages: [
+              {
+                key: districtId,
+                value: JSON.stringify({
+                  districtId,
+                  sensorId: cameraSensorId,
+                  type: 'trafficCamera',
+                  value: Math.random() * 100,
+                  unit: 'vehicles/min',
+                  status: 'active',
+                  lastUpdated: new Date().toISOString(),
+                  location: cameraLocation,
+                  metadata: {
+                    avgSpeed: 30 + Math.random() * 40,
+                    vehicleCount: Math.floor(Math.random() * 50),
+                    congestionStatus: ['light', 'moderate', 'heavy'][Math.floor(Math.random() * 3)],
+                  },
+                }),
+              },
+            ],
+          })
+        );
+      }
     }
 
     return messages;
