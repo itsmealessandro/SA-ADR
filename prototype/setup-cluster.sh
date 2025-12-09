@@ -55,3 +55,6 @@ echo -e "\n${GREEN}Setup Complete!${NC}"
 echo -e "Access the Dashboard at: http://localhost:8080"
 echo -e "Access the State Manager API at: http://localhost:3000"
 echo -e "Access the Notification Manager API at: http://localhost:3002/api"
+
+# Run access-dashboard.sh script
+./access-dashboard.sh
