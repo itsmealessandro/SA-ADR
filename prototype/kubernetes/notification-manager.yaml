@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: notification-manager
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: notification-manager
   ports:
@@ -55,3 +55,5 @@ spec:
                 configMapKeyRef:
                   name: digital-twin-config
                   key: KAFKA_CLIENT_ID_NOTIFICATIONS
+            - name: API_PORT
+              value: "3002"

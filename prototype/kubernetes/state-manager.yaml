@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: state-manager
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: state-manager
   ports:
