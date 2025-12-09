@@ -72,6 +72,8 @@ export class StatePublisher {
     this.producer = this.kafka.producer({
       allowAutoTopicCreation: true,
       transactionTimeout: 30000,
+      // @ts-ignore - maxRequestSize is valid in runtime but might be missing in types
+      maxRequestSize: 10485760, // 10MB
     });
 
     // Initialize jsondiffpatch for incremental updates
@@ -172,6 +174,11 @@ export class StatePublisher {
    * Start periodic full state publishing
    */
   private startFullStatePublisher(): void {
+    if (this.FULL_STATE_INTERVAL_MS <= 0) {
+      logger.info('Full state publisher disabled');
+      return;
+    }
+
     this.fullStateTimer = setInterval(async () => {
       try {
         await this.publishFullState();
