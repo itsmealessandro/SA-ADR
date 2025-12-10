@@ -7,6 +7,7 @@
     "buildings": [
         {
             "building_id": "building-hospital-001",
+            "district_id": "district-centro",
             "name": "Ospedale San Salvatore",
             "type": "hospital",
             "description": "Main hospital and emergency care facility",
@@ -176,6 +177,7 @@
         },
         {
             "building_id": "building-school-001",
+            "district_id": "district-centro",
             "name": "Scuola Media Dante Alighieri",
             "type": "school",
             "description": "Middle school in historic center",
@@ -294,6 +296,7 @@
         },
         {
             "building_id": "building-office-001",
+            "district_id": "district-pettino",
             "name": "Palazzo Uffici Regione Abruzzo",
             "type": "office",
             "description": "Regional government office building",
@@ -463,6 +466,7 @@
         },
         {
             "building_id": "building-basilica-001",
+            "district_id": "district-collemaggio",
             "name": "Basilica di Collemaggio",
             "type": "religious",
             "description": "Historic basilica and cultural landmark",
@@ -561,6 +565,7 @@
         },
         {
             "building_id": "building-university-001",
+            "district_id": "district-pettino",
             "name": "Università degli Studi dell'Aquila",
             "type": "university",
             "description": "Main university campus and research center",

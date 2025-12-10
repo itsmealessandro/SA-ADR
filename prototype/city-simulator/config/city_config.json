@@ -28,6 +28,7 @@
             "description": "Historic city center with high pedestrian traffic",
             "edges": [
                 {
+                    "gateway_id": "gateway-centro-1",
                     "edge_id": "edge-centro-1",
                     "name": "Piazza Duomo Area",
                     "location": {
@@ -80,6 +81,7 @@
                     }
                 },
                 {
+                    "gateway_id": "gateway-centro-2",
                     "edge_id": "edge-centro-2",
                     "name": "Corso Vittorio Emanuele",
                     "location": {
@@ -127,6 +129,7 @@
             "description": "Southern district with Basilica di Collemaggio",
             "edges": [
                 {
+                    "gateway_id": "gateway-collemaggio-1",
                     "edge_id": "edge-collemaggio-1",
                     "name": "Basilica Area",
                     "location": {
@@ -173,6 +176,7 @@
                     }
                 },
                 {
+                    "gateway_id": "gateway-collemaggio-2",
                     "edge_id": "edge-collemaggio-2",
                     "name": "Via Collemaggio",
                     "location": {
@@ -207,6 +211,7 @@
                     }
                 },
                 {
+                    "gateway_id": "gateway-collemaggio-3",
                     "edge_id": "edge-collemaggio-3",
                     "name": "Porta Bazzano",
                     "location": {
@@ -240,6 +245,7 @@
             "description": "Northern residential and university district",
             "edges": [
                 {
+                    "gateway_id": "gateway-pettino-1",
                     "edge_id": "edge-pettino-1",
                     "name": "University Area",
                     "location": {
@@ -292,6 +298,7 @@
                     }
                 },
                 {
+                    "gateway_id": "gateway-pettino-2",
                     "edge_id": "edge-pettino-2",
                     "name": "Via L'Aquila",
                     "location": {
