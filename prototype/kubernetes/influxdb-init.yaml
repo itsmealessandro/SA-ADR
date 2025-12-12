@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: influxdb-init-scripts
+data:
+  init-buckets.sh: |
+    #!/bin/sh
+    set -e
+    
+    # Wait for InfluxDB to start (although this script runs after init, the service might still be warming up)
+    # In standard docker-entrypoint-initdb.d, the server is started in background.
+    # However, for InfluxDB 2.x, the setup might be different. 
+    # The official image runs scripts in /docker-entrypoint-initdb.d *after* the initial setup (user/org/bucket creation).
+    
+    echo "Starting bucket initialization..."
+    
+    # We need to point to the local instance
+    # The configs are set by env vars, so we just use the CLI
+    
+    # Buckets to create
+    BUCKETS="city_metrics vehicles_metrics buildings_metrics"
+    
+    for BUCKET in $BUCKETS; do
+      if influx bucket list -n "$BUCKET" | grep -q "$BUCKET"; then
+        echo "Bucket $BUCKET already exists."
+      else
+        echo "Creating bucket $BUCKET..."
+        influx bucket create -n "$BUCKET" -r 0
+        echo "Bucket $BUCKET created."
+      fi
+    done
+    
+    echo "Bucket initialization complete."

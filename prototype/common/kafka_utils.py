@@ -55,6 +55,8 @@ def create_kafka_producer(
                 bootstrap_servers=bootstrap_servers.split(','),
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 key_serializer=lambda k: k.encode('utf-8') if k else None,
+                acks=1,
+                request_timeout_ms=30000,
                 api_version=(2, 5, 0)
             )
             logger.info(f"✓ Kafka producer connected successfully")

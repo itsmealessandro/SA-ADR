@@ -58,6 +58,8 @@ spec:
           volumeMounts:
             - name: influxdb-data
               mountPath: /var/lib/influxdb2
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
           livenessProbe:
             httpGet:
               path: /health
@@ -77,6 +79,11 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: influxdb-init-scripts
+            defaultMode: 0755
   volumeClaimTemplates:
     - metadata:
         name: influxdb-data
