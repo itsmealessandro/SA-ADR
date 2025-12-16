@@ -8,6 +8,12 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}Starting Digital Twin Kubernetes Setup...${NC}"
 
+# NOTE: only for alessandros PC 
+# 0 pull images
+docker pull apache/kafka:latest
+docker pull redis:7-alpine
+docker pull mongo:6
+
 # 1. Build Images locally
 echo -e "\n${BLUE}--- Step 1: Building Docker Images Locally ---${NC}"
 
@@ -43,6 +49,9 @@ if [ "$(kubectl config current-context)" = "minikube" ]; then
     minikube image load digital-twin/data-producer:latest
     minikube image load digital-twin/recommendation-manager:latest
     minikube image load digital-twin/dashboard:latest
+    minikube image load apache/kafka:latest
+    minikube image load redis:7-alpine
+    minikube image load mongo:6
     echo -e "${GREEN}Images loaded into Minikube${NC}"
 fi
 

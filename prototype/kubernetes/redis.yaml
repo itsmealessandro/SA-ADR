@@ -27,6 +27,7 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
+          imagePullPolicy: Never
           ports:
             - containerPort: 6379
           command: ["redis-server", "--appendonly", "yes"]

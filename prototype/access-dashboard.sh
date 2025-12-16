@@ -36,7 +36,7 @@ echo "Forwarding Notification Manager (http://localhost:3002)..."
 kubectl port-forward service/notification-manager 3002:3002 &
 
 # reccomandation manager
-# Forwarding service/notification-manager port  to localhost:3002
+# Forwarding service/recommendation-manager port  to localhost:3002
 echo "Forwarding service/recommendation-manager (http://localhost:3002)..."
 kubectl port-forward service/recommendation-manager 8081:8081 &
 
