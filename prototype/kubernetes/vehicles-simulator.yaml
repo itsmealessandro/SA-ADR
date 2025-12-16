@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicles-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vehicles-simulator
+  template:
+    metadata:
+      labels:
+        app: vehicles-simulator
+    spec:
+      containers:
+        - name: vehicles-simulator
+          image: digital-twin/vehicles-simulator:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_BROKERS
+            - name: KAFKA_TOPIC_VEHICLES
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_VEHICLES
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

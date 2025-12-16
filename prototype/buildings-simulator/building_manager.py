@@ -79,7 +79,6 @@ class BuildingManager:
                 key=self.building_id,  # Partition key
                 value=data
             )
-            future.get(timeout=10)
             return True
         except Exception as e:
             logger.error(f"[{self.building_id}] Kafka error: {e}. Buffering message.")

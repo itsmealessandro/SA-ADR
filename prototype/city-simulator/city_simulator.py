@@ -135,15 +135,12 @@ class CitySimulator:
             Exception: If connection fails after all retries
         """
         # Use common utility for Kafka producer creation
-        # Note: We override the value_serializer to use JSON encoding
+        # The utility already configures JSON serialization correctly
         producer = create_kafka_producer(
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             max_retries=10,
             retry_delay=5
         )
-        
-        # Re-configure for JSON serialization (common uses string serialization)
-        producer.config['value_serializer'] = lambda v: json.dumps(v).encode('utf-8')
         
         logger.info(f"✓ City simulator Kafka producer ready (topics: {list(KAFKA_TOPICS.values())})")
         return producer

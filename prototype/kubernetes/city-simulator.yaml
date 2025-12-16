@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: city-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: city-simulator
+  template:
+    metadata:
+      labels:
+        app: city-simulator
+    spec:
+      containers:
+        - name: city-simulator
+          image: digital-twin/city-simulator:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_BROKERS
+            - name: KAFKA_TOPIC_SPEED
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_SPEED
+            - name: KAFKA_TOPIC_WEATHER
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_WEATHER
+            - name: KAFKA_TOPIC_CAMERA
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_CAMERA
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

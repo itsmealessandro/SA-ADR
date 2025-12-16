@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildings-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: buildings-monitor
+  template:
+    metadata:
+      labels:
+        app: buildings-monitor
+    spec:
+      containers:
+        - name: buildings-monitor
+          image: digital-twin/buildings-monitor:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_BROKERS
+            - name: KAFKA_TOPIC_BUILDINGS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_BUILDINGS
+            - name: KAFKA_GROUP_ID
+              value: "buildings-monitor-group"
+            - name: INFLUXDB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_URL
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_TOKEN
+            - name: INFLUXDB_ORG
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_ORG
+            - name: INFLUXDB_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_BUCKET_BUILDINGS
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

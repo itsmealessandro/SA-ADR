@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buildings-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: buildings-simulator
+  template:
+    metadata:
+      labels:
+        app: buildings-simulator
+    spec:
+      containers:
+        - name: buildings-simulator
+          image: digital-twin/buildings-simulator:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_BROKERS
+            - name: KAFKA_TOPIC_BUILDINGS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_BUILDINGS
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

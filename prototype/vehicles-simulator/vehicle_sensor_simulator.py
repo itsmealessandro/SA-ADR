@@ -88,22 +88,128 @@ class VehicleSensorSimulator:
         # congestione e suggerire percorsi alternativi ai soccorsi
         self.route_planning = vehicle_config.get('route_planning', {})
         
+        # ROUTE PATH - Tracciato con waypoints GPS
+        # route_path: Percorso definito come sequenza di waypoints con coordinate GPS
+        # Usato per simulare movimento realistico del veicolo lungo un percorso predefinito
+        self.route_path = vehicle_config.get('route_path', {})
+        self.waypoints = self.route_path.get('waypoints', [])
+        
+        # Waypoint tracking - Traccia quale waypoint il veicolo sta cercando di raggiungere
+        self.current_waypoint_index = 0 if self.waypoints else None
+        self.waypoint_proximity_threshold = 0.0001  # ~11 metri in gradi lat/lon
+        
         # SIMULATION STATE - Stato interno della simulazione
         self.time_since_last_update = 0
         # Probabilità che il veicolo si fermi (30% se già fermo, 5% se in movimento)
         self.stationary_probability = 0.3 if vehicle_config['movement']['speed_kmh'] == 0 else 0.05
     
+    def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """
+        Calculate distance between two GPS coordinates using Haversine formula.
+        
+        Args:
+            lat1, lon1: First coordinate
+            lat2, lon2: Second coordinate
+            
+        Returns:
+            Distance in meters
+        """
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lat2_rad = math.radians(lat2)
+        delta_lat = math.radians(lat2 - lat1)
+        delta_lon = math.radians(lon2 - lon1)
+        
+        # Haversine formula
+        a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        
+        # Earth radius in meters
+        radius = 6371000
+        
+        return radius * c
+    
+    def _calculate_bearing(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """
+        Calculate bearing (direction) from point 1 to point 2.
+        
+        Args:
+            lat1, lon1: Starting coordinate
+            lat2, lon2: Target coordinate
+            
+        Returns:
+            Bearing in degrees (0-360, where 0=North)
+        """
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lat2_rad = math.radians(lat2)
+        delta_lon = math.radians(lon2 - lon1)
+        
+        # Calculate bearing
+        x = math.sin(delta_lon) * math.cos(lat2_rad)
+        y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon)
+        
+        bearing_rad = math.atan2(x, y)
+        bearing_deg = (math.degrees(bearing_rad) + 360) % 360
+        
+        return bearing_deg
+    
+    def _is_near_waypoint(self, waypoint: Dict[str, Any]) -> bool:
+        """
+        Check if vehicle is near a waypoint.
+        
+        Args:
+            waypoint: Waypoint dict with latitude/longitude
+            
+        Returns:
+            True if within proximity threshold
+        """
+        dist = abs(self.current_position['latitude'] - waypoint['latitude']) + \
+               abs(self.current_position['longitude'] - waypoint['longitude'])
+        return dist < self.waypoint_proximity_threshold
+    
+    def _move_to_next_waypoint(self):
+        """
+        Advance to the next waypoint in the route.
+        Loops back to start when reaching the end.
+        """
+        if not self.waypoints:
+            return
+        
+        self.current_waypoint_index = (self.current_waypoint_index + 1) % len(self.waypoints)
+    
     def _update_position(self, delta_time_seconds: float = 3.0):
         """
-        Update GPS position based on current speed and direction.
+        Update GPS position based on waypoints or random movement.
         
-        Uses simple geographic approximation for movement.
+        If waypoints are defined, vehicle follows the route_path.
+        Otherwise, uses legacy random movement.
         
         Args:
             delta_time_seconds: Time elapsed since last update
         """
         if self.current_speed_kmh == 0:
             return  # Vehicle is stationary
+        
+        # WAYPOINT-BASED MOVEMENT
+        if self.waypoints and self.current_waypoint_index is not None:
+            target_waypoint = self.waypoints[self.current_waypoint_index]
+            
+            # Check if reached current waypoint
+            if self._is_near_waypoint(target_waypoint):
+                self._move_to_next_waypoint()
+                target_waypoint = self.waypoints[self.current_waypoint_index]
+            
+            # Calculate direction to target waypoint
+            self.current_direction = self._calculate_bearing(
+                self.current_position['latitude'],
+                self.current_position['longitude'],
+                target_waypoint['latitude'],
+                target_waypoint['longitude']
+            )
+        
+        # LEGACY RANDOM MOVEMENT (fallback if no waypoints)
+        # Move vehicle in current direction
         
         # Convert speed to meters per second
         speed_ms = self.current_speed_kmh / 3.6
@@ -132,6 +238,15 @@ class VehicleSensorSimulator:
     
     def _simulate_speed_variation(self):
         """Simulate realistic speed variations (acceleration/deceleration)."""
+        # If following waypoints, maintain more consistent speed
+        if self.waypoints and self.current_waypoint_index is not None:
+            # Slight speed variation for realism
+            if self.current_speed_kmh > 0:
+                variation = random.uniform(-2, 2)
+                self.current_speed_kmh = max(0, min(120, self.current_speed_kmh + variation))
+            return
+        
+        # Legacy random speed behavior (for vehicles without waypoints)
         if random.random() < self.stationary_probability:
             # Come to a stop
             self.current_speed_kmh = 0
@@ -150,6 +265,12 @@ class VehicleSensorSimulator:
     
     def _simulate_direction_change(self):
         """Simulate realistic direction changes (turns)."""
+        # If following waypoints, direction is calculated automatically
+        # No random direction changes needed
+        if self.waypoints and self.current_waypoint_index is not None:
+            return
+        
+        # Legacy random direction behavior (for vehicles without waypoints)
         if random.random() < 0.1:  # 10% chance of direction change
             # Small turn
             direction_change = random.uniform(-30, 30)

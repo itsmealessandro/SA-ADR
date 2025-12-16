@@ -1,0 +1,36 @@
+2025-12-12 09:10:21,911 - __main__ - INFO - ✓ Loaded buildings configuration (version: 1.0)
+2025-12-12 09:10:21,911 - common.kafka_utils - INFO - 🔄 Initializing Kafka producer (bootstrap: kafka:9092)...
+2025-12-12 09:10:21,933 - common.kafka_utils - INFO - ✓ Kafka producer connected successfully
+2025-12-12 09:10:21,933 - __main__ - INFO - ✓ Buildings simulator Kafka producer ready (topic: buildings-monitoring)
+2025-12-12 09:10:21,933 - building_manager - INFO - BuildingManager initialized: building-hospital-001 - Ospedale San Salvatore (hospital)
+2025-12-12 09:10:21,933 - building_manager - INFO - BuildingManager initialized: building-school-001 - Scuola Media Dante Alighieri (school)
+2025-12-12 09:10:21,933 - building_manager - INFO - BuildingManager initialized: building-office-001 - Palazzo Uffici Regione Abruzzo (office)
+2025-12-12 09:10:21,933 - building_manager - INFO - BuildingManager initialized: building-basilica-001 - Basilica di Collemaggio (religious)
+2025-12-12 09:10:21,933 - building_manager - INFO - BuildingManager initialized: building-university-001 - Università degli Studi dell'Aquila (university)
+2025-12-12 09:10:21,933 - __main__ - INFO - ✓ BuildingsSimulator initialized
+2025-12-12 09:10:21,933 - __main__ - INFO -   Total buildings: 5
+2025-12-12 09:10:21,933 - __main__ - INFO - ======================================================================
+2025-12-12 09:10:21,933 - __main__ - INFO - 🏢 L'Aquila Buildings Monitoring System
+2025-12-12 09:10:21,933 - __main__ - INFO - ======================================================================
+2025-12-12 09:10:21,934 - __main__ - INFO - 📊 Configuration:
+2025-12-12 09:10:21,934 - __main__ - INFO -    Total Buildings: 5
+2025-12-12 09:10:21,934 - __main__ - INFO -    - hospital: 1
+2025-12-12 09:10:21,934 - __main__ - INFO -    - school: 1
+2025-12-12 09:10:21,934 - __main__ - INFO -    - office: 1
+2025-12-12 09:10:21,934 - __main__ - INFO -    - religious: 1
+2025-12-12 09:10:21,934 - __main__ - INFO -    - university: 1
+2025-12-12 09:10:21,934 - __main__ - INFO -    Kafka Topic: buildings-monitoring
+2025-12-12 09:10:21,934 - __main__ - INFO - ======================================================================
+2025-12-12 09:10:21,934 - __main__ - INFO - Starting all building managers...
+2025-12-12 09:10:21,934 - building_manager - INFO - [building-hospital-001] Starting building loop (interval: 4.7s)
+2025-12-12 09:10:21,935 - building_manager - INFO - [building-school-001] Starting building loop (interval: 5.3s)
+2025-12-12 09:10:21,936 - building_manager - INFO - [building-office-001] Starting building loop (interval: 5.1s)
+2025-12-12 09:10:21,936 - building_manager - INFO - [building-basilica-001] Starting building loop (interval: 5.4s)
+2025-12-12 09:10:21,938 - building_manager - INFO - [building-university-001] Starting building loop (interval: 4.9s)
+2025-12-12 09:10:21,938 - __main__ - INFO - ✓ Started 5 building threads
+2025-12-12 09:10:21,938 - __main__ - INFO - ✓ System running. Press Ctrl+C to stop.
+2025-12-12 09:10:21,938 - kafka.conn - INFO - <BrokerConnection node_id=bootstrap-0 host=kafka:9092 <connecting> [IPv4 ('10.109.76.60', 9092)]>: connecting to kafka:9092 [('10.109.76.60', 9092) IPv4]
+2025-12-12 09:10:21,939 - kafka.conn - INFO - <BrokerConnection node_id=bootstrap-0 host=kafka:9092 <connecting> [IPv4 ('10.109.76.60', 9092)]>: Connection complete.
+2025-12-12 09:10:21,942 - kafka.conn - INFO - <BrokerConnection node_id=1 host=kafka:9092 <connecting> [IPv4 ('10.109.76.60', 9092)]>: connecting to kafka:9092 [('10.109.76.60', 9092) IPv4]
+2025-12-12 09:10:21,942 - kafka.conn - INFO - <BrokerConnection node_id=1 host=kafka:9092 <connecting> [IPv4 ('10.109.76.60', 9092)]>: Connection complete.
+2025-12-12 09:10:21,942 - kafka.conn - INFO - <BrokerConnection node_id=bootstrap-0 host=kafka:9092 <connected> [IPv4 ('10.109.76.60', 9092)]>: Closing connection. 

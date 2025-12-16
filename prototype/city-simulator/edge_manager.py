@@ -159,7 +159,9 @@ class EdgeManager:
             if not topic:
                 logger.error(f"[{self.edge_id}] No topic configured for sensor type: {sensor_type}")
                 return False
-                
+            
+            logger.info(f"[{self.edge_id}] 📤 Sending {sensor_type} data to {topic}...")
+            
             # Async send with timeout and partition key
             # Using edge_id as key ensures all data for this edge goes to same partition
             future = self.kafka_producer.send(
@@ -168,6 +170,7 @@ class EdgeManager:
                 value=data
             )
             future.get(timeout=10)  # Wait max 10 seconds
+            logger.info(f"[{self.edge_id}] ✓ Sent {sensor_type} data to {topic}")
             return True
         except Exception as e:
             # Log error and buffer message for retry
@@ -226,12 +229,17 @@ class EdgeManager:
                 else:
                     sensor_type = 'camera'
                 
+                logger.info(f"[{self.edge_id}] Iteration {iteration}: Generating {sensor_type} data")
+                
                 # Generate data for current sensor type
                 data = self.generate_sensor_data(sensor_type)
                 
                 # Send if data was generated (skip if no sensors of this type)
                 if data is not None:
+                    logger.info(f"[{self.edge_id}] Data generated, sending to Kafka...")
                     self.send_to_kafka(data)
+                else:
+                    logger.info(f"[{self.edge_id}] No {sensor_type} sensors, skipping")
                 
                 # Periodically retry buffered messages
                 if iteration % 10 == 0:

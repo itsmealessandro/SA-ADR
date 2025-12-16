@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: city-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: city-monitor
+  template:
+    metadata:
+      labels:
+        app: city-monitor
+    spec:
+      containers:
+        - name: city-monitor
+          image: digital-twin/city-monitor:latest
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_BROKERS
+            - name: KAFKA_TOPIC_SPEED
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_SPEED
+            - name: KAFKA_TOPIC_WEATHER
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_WEATHER
+            - name: KAFKA_TOPIC_CAMERA
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_TOPIC_CAMERA
+            - name: KAFKA_GROUP_ID
+              value: "city-monitor-group"
+            - name: INFLUXDB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_URL
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_TOKEN
+            - name: INFLUXDB_ORG
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_ORG
+            - name: INFLUXDB_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_BUCKET_CITY
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

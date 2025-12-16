@@ -25,6 +25,23 @@ data:
   KAFKA_CLIENT_ID_NOTIFICATIONS: "notification-manager"
   KAFKA_CLIENT_ID_PRODUCER: "data-producer"
 
+  # Kafka Topics
+  KAFKA_TOPIC_SPEED: "city-speed-sensors"
+  KAFKA_TOPIC_WEATHER: "city-weather-sensors"
+  KAFKA_TOPIC_CAMERA: "city-camera-sensors"
+  KAFKA_TOPIC_VEHICLES: "vehicles-telemetry"
+  KAFKA_TOPIC_BUILDINGS: "buildings-monitoring"
+
+  # InfluxDB
+  INFLUXDB_URL: "http://influxdb:8086"
+  INFLUXDB_TOKEN: "digital-twin-admin-token"
+  INFLUXDB_ORG: "emergency-mgmt"
+  INFLUXDB_BUCKET_CITY: "city_metrics"
+  INFLUXDB_BUCKET_VEHICLES: "vehicles_metrics"
+  INFLUXDB_BUCKET_BUILDINGS: "buildings_metrics"
+  INFLUXDB_ADMIN_USER: "admin"
+  INFLUXDB_ADMIN_PASSWORD: "adminpassword"
+
   # App Configuration
   API_PORT: "3000"
   WEBSOCKET_PORT: "3001"
@@ -34,4 +51,33 @@ data:
   WS_UPDATE_BUFFER_MS: "100"
   FULL_STATE_PUBLISH_INTERVAL_MS: "60000"
   INCREMENTAL_STATE_PUBLISH_INTERVAL_MS: "5000"
+  INCREMENTAL_STATE_PUBLISH_INTERVAL_MS: "5000"
   MESSAGE_INTERVAL_MS: "2000"
+
+  # Initialization Scripts
+  init-buckets.sh: |
+    #!/bin/sh
+    set -e
+    
+    echo "Starting bucket initialization..."
+    
+    # Wait for InfluxDB to be ready
+    until influx ping; do
+      echo "Waiting for InfluxDB..."
+      sleep 2
+    done
+    
+    # Buckets to create
+    BUCKETS="city_metrics vehicles_metrics buildings_metrics"
+    
+    for BUCKET in $BUCKETS; do
+      if influx bucket list -n "$BUCKET" | grep -q "$BUCKET"; then
+        echo "Bucket $BUCKET already exists."
+      else
+        echo "Creating bucket $BUCKET..."
+        influx bucket create -n "$BUCKET" -r 0
+        echo "Bucket $BUCKET created."
+      fi
+    done
+    
+    echo "Bucket initialization complete."
