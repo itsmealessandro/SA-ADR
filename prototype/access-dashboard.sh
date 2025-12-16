@@ -35,6 +35,12 @@ kubectl port-forward service/state-manager 3001:3001 &
 echo "Forwarding Notification Manager (http://localhost:3002)..."
 kubectl port-forward service/notification-manager 3002:3002 &
 
+# reccomandation manager
+# Forwarding service/notification-manager port  to localhost:3002
+echo "Forwarding service/recommendation-manager (http://localhost:3002)..."
+kubectl port-forward service/recommendation-manager 8081:8081 &
+
+
 # Wait for a moment to let connections establish
 sleep 2
 
