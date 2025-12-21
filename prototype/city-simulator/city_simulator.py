@@ -60,10 +60,79 @@ KAFKA_TOPICS = {
 }
 CITY_CONFIG_FILE = os.getenv('CITY_CONFIG_FILE', 
                               os.path.join(os.path.dirname(__file__), 'config', 'city_config.json'))
+CITY_GRAPH_FILE = os.getenv('CITY_GRAPH_FILE',
+                             os.path.join(os.path.dirname(__file__), 'config', 'laquila-city-graph-overture.json'))
 
 # Horizontal scaling configuration
 INSTANCE_ID = int(os.getenv('INSTANCE_ID', '0'))
 TOTAL_INSTANCES = int(os.getenv('TOTAL_INSTANCES', '1'))
+
+# Global graph data cache
+_GRAPH_DATA = None
+_EDGE_COORDS_MAP = None
+
+
+def load_city_graph() -> Dict[str, Dict[str, float]]:
+    """
+    Load city graph from JSON file and build edge coordinate map.
+    Uses global cache to avoid reloading.
+    
+    Returns:
+        Dict mapping edge_id to {latitude, longitude} for O(1) lookups
+    """
+    global _GRAPH_DATA, _EDGE_COORDS_MAP
+    
+    if _EDGE_COORDS_MAP is not None:
+        return _EDGE_COORDS_MAP
+    
+    try:
+        logger.info(f"Loading city graph from {CITY_GRAPH_FILE}...")
+        with open(CITY_GRAPH_FILE, 'r', encoding='utf-8') as f:
+            _GRAPH_DATA = json.load(f)
+        
+        # Build edge coordinate map for fast O(1) lookups
+        _EDGE_COORDS_MAP = {}
+        edges = _GRAPH_DATA.get('edges', [])
+        
+        for edge in edges:
+            edge_id = edge.get('edgeId')
+            geometry = edge.get('geometry', {})
+            coordinates = geometry.get('coordinates', [])
+            
+            if edge_id and coordinates and len(coordinates) > 0:
+                # Get first point: [longitude, latitude]
+                lon, lat = coordinates[0]
+                _EDGE_COORDS_MAP[edge_id] = {'latitude': lat, 'longitude': lon}
+        
+        edge_count = len(_EDGE_COORDS_MAP)
+        node_count = len(_GRAPH_DATA.get('nodes', []))
+        logger.info(f"✓ Loaded city graph: {node_count} nodes, {edge_count} edges with coordinates")
+        return _EDGE_COORDS_MAP
+    except FileNotFoundError:
+        logger.error(f"✗ City graph file not found: {CITY_GRAPH_FILE}")
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(f"✗ Invalid JSON in city graph file: {e}")
+        raise
+
+
+def get_edge_coordinates(edge_id: str, edge_coords_map: Dict[str, Dict[str, float]]) -> Dict[str, float]:
+    """
+    Get coordinates for a specific edge from the pre-built map.
+    
+    Args:
+        edge_id: Edge ID in format E-XXXXX
+        edge_coords_map: Pre-built map of edge_id -> {latitude, longitude}
+        
+    Returns:
+        Dict with 'latitude' and 'longitude', or None if edge not found
+    """
+    coords = edge_coords_map.get(edge_id)
+    
+    if coords is None:
+        logger.warning(f"Edge {edge_id} not found in graph, using fallback coordinates")
+    
+    return coords
 
 
 def load_city_config() -> Dict[str, Any]:
@@ -153,13 +222,15 @@ def generate_sensors_for_gateway(
     edge_end: int,
     sensors_per_edge: Dict[str, int],
     gateway_location: Dict[str, float],
-    weather_stations_count: int = 3
+    weather_stations_count: int = 3,
+    edge_coords_map: Dict[str, Dict[str, float]] = None
 ) -> Dict[str, List[Dict]]:
     """
     Generate sensor configurations for a gateway covering multiple edges.
     
     Each sensor is assigned to a specific city graph edge within the gateway's range.
     Weather stations are limited to a fixed number per gateway (they cover larger areas).
+    Sensor coordinates are extracted from the actual city graph data.
     
     Args:
         gateway_id: The gateway ID (GW-XXXXX)
@@ -168,6 +239,7 @@ def generate_sensors_for_gateway(
         sensors_per_edge: Dict with sensor count per type per edge (excludes weather)
         gateway_location: Gateway's base location for calculating sensor positions
         weather_stations_count: Fixed number of weather stations per gateway
+        edge_coords_map: Pre-built map of edge_id -> {latitude, longitude}
         
     Returns:
         Dict mapping sensor types to list of sensor configs with edge_id
@@ -185,22 +257,34 @@ def generate_sensors_for_gateway(
             weather_edge_id = generate_edge_id(weather_edge_index)
             sensor_id = f"weather-{gateway_id}-{chr(97 + i)}"
             
-            # Position with offset based on station index
-            offset_factor = i / max(1, weather_stations_count - 1) if weather_stations_count > 1 else 0.5
-            offset_lat = (offset_factor * 0.02 - 0.01) + random.uniform(-0.002, 0.002)
-            offset_lon = (offset_factor * 0.02 - 0.01) + random.uniform(-0.002, 0.002)
+            # Get coordinates from map if available, otherwise use offset
+            edge_coords = get_edge_coordinates(weather_edge_id, edge_coords_map) if edge_coords_map else None
+            
+            if edge_coords:
+                # Use exact edge coordinates
+                offset_lat = 0.0
+                offset_lon = 0.0
+            else:
+                # Fallback to offset-based positioning
+                offset_factor = i / max(1, weather_stations_count - 1) if weather_stations_count > 1 else 0.5
+                offset_lat = (offset_factor * 0.02 - 0.01) + random.uniform(-0.002, 0.002)
+                offset_lon = (offset_factor * 0.02 - 0.01) + random.uniform(-0.002, 0.002)
             
             sensors['weather'].append({
                 'sensor_id': sensor_id,
                 'edge_id': weather_edge_id,
                 'location': f"Weather station {i+1} near {weather_edge_id}",
                 'offset_lat': round(offset_lat, 6),
-                'offset_lon': round(offset_lon, 6)
+                'offset_lon': round(offset_lon, 6),
+                'base_location': edge_coords  # Store actual edge location if available
             })
     
     # Generate other sensors per edge (speed, camera, etc.)
     for edge_index in range(edge_start, edge_end + 1):
         edge_id = generate_edge_id(edge_index)
+        
+        # Get actual coordinates for this edge from the map (O(1) lookup)
+        edge_coords = get_edge_coordinates(edge_id, edge_coords_map) if edge_coords_map else None
         
         for sensor_type, count in sensors_per_edge.items():
             # Skip weather - already handled above
@@ -210,18 +294,29 @@ def generate_sensors_for_gateway(
             for i in range(count):
                 sensor_id = f"{sensor_type}-{edge_id}-{chr(97 + i)}"
                 
-                # Position sensors with offset from gateway location
-                # Distribute based on edge index for spatial spread
-                edge_offset = (edge_index - edge_start) / max(1, edge_end - edge_start)
-                offset_lat = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
-                offset_lon = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
+                # For cameras: MANDATORY to use exact edge coordinates
+                # For other sensors: prefer edge coordinates, fallback to offset
+                if sensor_type == 'camera' and edge_coords:
+                    # Use exact edge coordinates for cameras (no offset)
+                    offset_lat = 0.0
+                    offset_lon = 0.0
+                elif edge_coords:
+                    # Use edge coordinates with small random offset for multiple sensors
+                    offset_lat = random.uniform(-0.0001, 0.0001)
+                    offset_lon = random.uniform(-0.0001, 0.0001)
+                else:
+                    # Fallback to calculated offset from gateway location
+                    edge_offset = (edge_index - edge_start) / max(1, edge_end - edge_start)
+                    offset_lat = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
+                    offset_lon = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
                 
                 sensors[sensor_type].append({
                     'sensor_id': sensor_id,
                     'edge_id': edge_id,  # Each sensor knows which graph edge it monitors
                     'location': f"{sensor_type.capitalize()} on {edge_id}",
                     'offset_lat': round(offset_lat, 6),
-                    'offset_lon': round(offset_lon, 6)
+                    'offset_lon': round(offset_lon, 6),
+                    'base_location': edge_coords  # Store actual edge location if available
                 })
     
     return sensors
@@ -239,6 +334,9 @@ class CitySimulator:
         """Initialize the city simulator."""
         self.city_config = load_city_config()
         self.city_name = self.city_config['city']['name']
+        
+        # Load city graph and build edge coordinate map for fast lookups
+        self.edge_coords_map = load_city_graph()
         
         # Configuration
         self.graph_config = self.city_config.get('graph', {})
@@ -352,7 +450,8 @@ class CitySimulator:
                 edge_end,
                 self.sensors_per_edge,
                 location,
-                gateway_weather_count
+                gateway_weather_count,
+                self.edge_coords_map
             )
             
             # Build gateway configuration

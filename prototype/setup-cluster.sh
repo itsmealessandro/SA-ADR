@@ -113,6 +113,3 @@ echo -e "  Org:      emergency-mgmt"
 echo -e "  Buckets:  city_metrics, vehicles_metrics, buildings_metrics"
 echo -e "  ${BLUE}Note: Buckets auto-initialized by influxdb-init-buckets Job${NC}"
 echo -e "${BLUE}==================================================================${NC}"
-
-# Run access-dashboard.sh script
-./access-dashboard.sh

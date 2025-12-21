@@ -36,17 +36,25 @@ class SensorSimulator:
         """
         Calculate GPS coordinates for a specific sensor with offset.
         
-        Sensors at the same edge have slightly different positions based on
-        their physical location (e.g., entrance vs exit of a road).
+        Uses actual edge coordinates from graph data if available (stored in base_location),
+        otherwise falls back to gateway location with offset.
         
         Args:
-            sensor_config: Sensor configuration with optional offset_lat and offset_lon
+            sensor_config: Sensor configuration with optional offset_lat, offset_lon,
+                          and base_location (actual edge coordinates from graph)
             
         Returns:
             Tuple of (latitude, longitude) rounded to 6 decimal places
         """
-        lat = self.location['latitude'] + sensor_config.get('offset_lat', 0)
-        lon = self.location['longitude'] + sensor_config.get('offset_lon', 0)
+        # Use actual edge location if available, otherwise use gateway location
+        base_location = sensor_config.get('base_location')
+        if base_location:
+            lat = base_location['latitude'] + sensor_config.get('offset_lat', 0)
+            lon = base_location['longitude'] + sensor_config.get('offset_lon', 0)
+        else:
+            lat = self.location['latitude'] + sensor_config.get('offset_lat', 0)
+            lon = self.location['longitude'] + sensor_config.get('offset_lon', 0)
+        
         return round(lat, 6), round(lon, 6)
 
 
