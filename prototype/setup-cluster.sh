@@ -18,14 +18,19 @@ docker pull influxdb:2.7-alpine
 # 1. Build Images locally
 echo -e "\n${BLUE}--- Step 1: Building Docker Images Locally ---${NC}"
 
-docker build --no-cache -t digital-twin/city-simulator:latest -f ./city-simulator/Dockerfile .
-docker build --no-cache -t digital-twin/vehicles-simulator:latest -f ./vehicles-simulator/Dockerfile .
-docker build --no-cache -t digital-twin/buildings-simulator:latest -f ./buildings-simulator/Dockerfile .
+docker build -t digital-twin/city-simulator:latest -f ./city-simulator/Dockerfile .
+docker build -t digital-twin/vehicles-simulator:latest -f ./vehicles-simulator/Dockerfile .
+docker build -t digital-twin/buildings-simulator:latest -f ./buildings-simulator/Dockerfile .
 
 # Recommendation Manager 
-# echo -e "${BLUE}Building Recommendation Manager (digital-twin/recommendation-manager:latest)...${NC}"
-# docker build -t digital-twin/recommendation-manager:latest ./recommendationManager
-# echo -e "${GREEN}Successfully built Recommendation Manager${NC}"
+ echo -e "${BLUE}Building Recommendation Manager (digital-twin/recommendation-manager:latest)...${NC}"
+ docker build -t digital-twin/recommendation-manager:latest ./recommendationManager
+ echo -e "${GREEN}Successfully built Recommendation Manager${NC}"
+
+# Risk Manager
+echo -e "${BLUE}Building Risk Manager (digital-twin/risk-manager:latest)...${NC}"
+docker build -t digital-twin/risk-manager:latest ./recommendationManager
+echo -e "${GREEN}Successfully built Risk Manager${NC}"
 
 # City Simulator
 echo -e "${BLUE}Building City Simulator (digital-twin/city-simulator:latest)...${NC}"
@@ -80,7 +85,10 @@ if [ "$(kubectl config current-context)" = "minikube" ]; then
     minikube image load digital-twin/state-manager:latest
     minikube image load digital-twin/notification-manager:latest
     minikube image load digital-twin/data-producer:latest
+
     minikube image load digital-twin/recommendation-manager:latest 
+    minikube image load digital-twin/risk-manager:latest 
+
     minikube image load digital-twin/city-simulator:latest
     minikube image load digital-twin/vehicles-simulator:latest
     minikube image load digital-twin/buildings-simulator:latest
