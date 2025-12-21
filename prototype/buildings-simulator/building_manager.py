@@ -41,6 +41,7 @@ class BuildingManager:
         """
         # Building identification
         self.building_id = building_config['building_id']
+        self.district_id = building_config['district_id']
         self.building_name = building_config['name']
         self.building_type = building_config['type']
         
@@ -76,7 +77,7 @@ class BuildingManager:
         try:
             future = self.kafka_producer.send(
                 self.kafka_topic, 
-                key=self.building_id,  # Partition key
+                key=self.district_id,  # Partition key for data locality by district
                 value=data
             )
             return True
