@@ -118,6 +118,7 @@ interface Elevator {
 }
 
 interface BuildingMessage {
+  district_id: string;
   building_id: string;
   building_name: string;
   building_type: string;
@@ -222,7 +223,7 @@ export class KafkaConsumerManager {
       },
     });
 
-    this.consumer = this.kafka.consumer({ 
+    this.consumer = this.kafka.consumer({
       groupId,
       maxBytesPerPartition: 1048576, // 1MB per partition
       sessionTimeout: 30000,
@@ -269,15 +270,15 @@ export class KafkaConsumerManager {
   private async loadStateToCache(): Promise<void> {
     try {
       const state = await this.redisManager.getCompleteState();
-      
+
       // Cache districts
       for (const district of state.districts) {
         this.stateCache.set(`district:${district.districtId}`, district);
       }
-      
+
       // Cache shared state
       this.stateCache.set('cityGraph', state.cityGraph);
-      
+
       logger.info(`Loaded state to cache: ${this.stateCache.size} entries`);
     } catch (error) {
       logger.error('Error loading state to cache:', error);
@@ -289,13 +290,13 @@ export class KafkaConsumerManager {
    */
   private async handleBatch(payload: EachBatchPayload): Promise<void> {
     const { batch, resolveOffset, heartbeat, commitOffsetsIfNecessary } = payload;
-    
+
     try {
       const startTime = Date.now();
-      
+
       // Group messages by district/category for sequential processing within group
       const messageGroups = this.groupMessages(batch.messages, batch.topic);
-      
+
       // Process each group in parallel (safe because different districts)
       await Promise.all(
         Array.from(messageGroups.entries()).map(async ([groupKey, messages]) => {
@@ -303,30 +304,30 @@ export class KafkaConsumerManager {
             try {
               const data = JSON.parse(message.value!.toString());
               await this.processMessageInMemory(batch.topic, data);
-              
+
               // Resolve offset for each processed message
               resolveOffset(message.offset);
             } catch (error) {
               logger.error(`Error processing message in group ${groupKey}:`, error);
             }
           }
-          
+
           // Send heartbeat periodically
           await heartbeat();
         })
       );
-      
+
       // Commit offsets
       await commitOffsetsIfNecessary();
-      
+
       const duration = Date.now() - startTime;
       const throughput = duration > 0 ? Math.round(batch.messages.length / (duration / 1000)) : batch.messages.length;
-      
+
       // Only log if batch has more than 1 message or took significant time
       if (batch.messages.length > 1 || duration > 10) {
         logger.info(`Processed batch: ${batch.messages.length} messages in ${duration}ms (${throughput} msg/s)`);
       }
-      
+
     } catch (error) {
       logger.error('Error handling batch:', error);
     }
@@ -337,14 +338,14 @@ export class KafkaConsumerManager {
    */
   private groupMessages(messages: any[], _topic: string): Map<string, any[]> {
     const groups = new Map<string, any[]>();
-    
+
     for (const message of messages) {
       if (!message.value) continue;
-      
+
       try {
         const data = JSON.parse(message.value.toString());
         const groupKey = data.districtId || 'shared'; // Shared for publicTransport, emergency
-        
+
         if (!groups.has(groupKey)) {
           groups.set(groupKey, []);
         }
@@ -353,7 +354,7 @@ export class KafkaConsumerManager {
         logger.error('Error parsing message:', error);
       }
     }
-    
+
     return groups;
   }
 
@@ -567,11 +568,11 @@ export class KafkaConsumerManager {
    * Stores comprehensive building monitoring data including sensors and managed resources
    */
   private updateBuildingInCache(data: BuildingMessage): void {
-    const { building_id, building_name, building_type, timestamp, location, sensors, managed_resources } = data;
+    const { building_id, district_id, building_name, building_type, timestamp, location, sensors, managed_resources } = data;
     if (!building_id) return;
 
     // Extract district from building_id or use default
-    const districtId = this.extractDistrictFromBuildingId(building_id);
+    const districtId = district_id
     const cacheKey = `district:${districtId}`;
     let district = this.stateCache.get(cacheKey);
 
@@ -584,6 +585,7 @@ export class KafkaConsumerManager {
     const buildingIndex = district.buildings.findIndex((b: any) => b.buildingId === building_id);
 
     const buildingData = {
+      districtId,
       buildingId: building_id,
       name: building_name,
       type: building_type,
@@ -662,18 +664,6 @@ export class KafkaConsumerManager {
     } else {
       district.buildings.push(buildingData);
     }
-  }
-
-  /**
-   * Extract district ID from building ID
-   */
-  private extractDistrictFromBuildingId(buildingId: string): string {
-    // Building IDs follow pattern: building-{type}-{number}
-    // Map to districts based on type or use default
-    if (buildingId.includes('hospital')) return 'district-centro';
-    if (buildingId.includes('school')) return 'district-centro';
-    if (buildingId.includes('university')) return 'district-centro';
-    return 'district-centro'; // Default district
   }
 
   /**
