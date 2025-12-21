@@ -12,6 +12,25 @@ spec:
       labels:
         app: buildings-monitor
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.28
+          env:
+            - name: KAFKA_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_PORT
+          command: ['sh', '-c', 'until nc -z kafka $KAFKA_PORT; do echo waiting for kafka; sleep 2; done;']
+        - name: wait-for-influxdb
+          image: busybox:1.28
+          env:
+            - name: INFLUXDB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: INFLUXDB_PORT
+          command: ['sh', '-c', 'until nc -z influxdb $INFLUXDB_PORT; do echo waiting for influxdb; sleep 2; done;']
       containers:
         - name: buildings-monitor
           image: digital-twin/buildings-monitor:latest
