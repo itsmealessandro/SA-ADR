@@ -5,18 +5,20 @@ This module manages a single gateway location with its sensors.
 Each gateway runs in a separate thread, simulating concurrent operations
 at different physical locations in the city.
 
-A gateway represents a specific location (e.g., a street intersection) that
-hosts multiple sensors of different types. The gateway aggregates all sensor
-data and sends it to Kafka as a unified payload.
+A gateway represents a physical data collector in an area that hosts multiple 
+sensors of different types. Each sensor monitors a specific city graph edge.
+The gateway aggregates all sensor data and sends it to Kafka as a unified payload.
 
 Edge ID vs Gateway ID:
-- edge_id: Property of individual sensors, refers to the graph edge (E-00000 to E-03458) 
-  where each sensor is physically located. Sensors inherit this from their config.
-- gateway_id: Unique identifier for the gateway device itself. The gateway is the 
-  data collector that aggregates and forwards sensor data.
+- gateway_id: Unique identifier for the gateway device (GW-XXXXX). The gateway is the 
+  physical data collector/aggregator in an area.
+- edge_id: Property of individual sensors. Each sensor has its own edge_id referring
+  to the specific graph edge (E-00000 to E-03458) where that sensor is located.
+  One gateway manages sensors across MULTIPLE graph edges.
 """
 
 import logging
+import random
 import threading
 import time
 from collections import deque
@@ -35,10 +37,11 @@ GATEWAY_FIRMWARE = "EdgeOS 2.1.3"
 
 class EdgeManager:
     """
-    Manages a single gateway location with multiple sensors.
+    Manages a single gateway with sensors across multiple graph edges.
     
     This class acts as a Gateway that gathers sensor data from all sensors
-    at a specific location and sends it to Kafka as a unified payload.
+    in its coverage area and sends it to Kafka as a unified payload.
+    Each sensor knows its own edge_id (which graph edge it monitors).
     
     Responsibilities:
     - Coordinate data generation from all sensors at this gateway
@@ -55,27 +58,33 @@ class EdgeManager:
     
     def __init__(self, district_id: str, edge_config: Dict, 
                  kafka_producer: Any, kafka_topics: Dict[str, str], 
-                 stop_event: threading.Event):
+                 stop_event: threading.Event, sampling_interval: float = 3.0):
         """
         Initialize a Gateway Manager.
         
         Args:
             district_id: ID of the district this gateway belongs to
-            edge_config: Configuration dict from city_config.json
+            edge_config: Configuration dict containing:
+                - gateway_id: Unique gateway identifier
+                - name: Human-readable gateway name
+                - location: Dict with latitude/longitude
+                - sensors: Dict mapping sensor types to list of sensor configs
+                  Each sensor config includes its own edge_id
+                - edge_range: Optional dict with start/end edges covered
             kafka_producer: Shared Kafka producer instance (thread-safe)
             kafka_topics: Dictionary mapping sensor types to topic names
             stop_event: Threading event to signal shutdown
+            sampling_interval: Sampling interval in seconds from config
         """
         # Gateway identification
         self.district_id = district_id
-        self.gateway_id = edge_config.get('gateway_id', edge_config['edge_id'])  # Use gateway_id if available
-        self.gateway_name = edge_config['name']
+        self.gateway_id = edge_config.get('gateway_id', 'unknown-gateway')
+        self.gateway_name = edge_config.get('name', f"Gateway {self.gateway_id}")
         self.location = edge_config['location']
         self.sensors_config = edge_config.get('sensors', {})
         
-        # Edge ID for sensors - sensors inherit this to identify their graph edge location
-        # This is passed to sensors but NOT included in the gateway payload
-        self._sensors_edge_id = edge_config['edge_id']
+        # Edge range info (for metadata)
+        self.edge_range = edge_config.get('edge_range', {})
         
         # Kafka configuration
         self.kafka_producer = kafka_producer
@@ -89,55 +98,60 @@ class EdgeManager:
         self.camera_simulator = CameraSensorSimulator(self.location)
         
         # Local buffer for resilience
-        # If Kafka is temporarily unavailable, messages are buffered here
         self.local_buffer = deque(maxlen=1000)
         
-        # Randomized sampling interval to avoid synchronization
-        # (prevents all gateways from sending data at exactly the same time)
-        import random
-        self.sampling_interval = random.uniform(2.5, 4.5)
+        # Use configured sampling interval with small randomization (±10%) to avoid synchronization
+        jitter = sampling_interval * 0.1
+        self.sampling_interval = random.uniform(
+            sampling_interval - jitter, 
+            sampling_interval + jitter
+        )
         
         # Log initialization
         speed_count = len(self.sensors_config.get('speed', []))
         weather_count = len(self.sensors_config.get('weather', []))
         camera_count = len(self.sensors_config.get('camera', []))
+        total_sensors = speed_count + weather_count + camera_count
         
         logger.info(
-            f"Gateway initialized: {district_id}/{self.gateway_id} (name: {self.gateway_name}) - "
-            f"Sensors: {speed_count} speed, {weather_count} weather, {camera_count} camera"
+            f"Gateway initialized: {self.gateway_id} ({self.gateway_name}) - "
+            f"District: {district_id}, Sensors: {total_sensors} "
+            f"({speed_count} speed, {weather_count} weather, {camera_count} camera)"
         )
     
     def generate_sensor_data(self, sensor_type: str) -> Optional[Dict[str, Any]]:
         """
         Generate data for a specific sensor type.
         
-        This method coordinates with the appropriate sensor simulator
-        and returns the sensor-specific data with gateway_id attached.
+        Each sensor in the config has its own edge_id. The sensor simulator
+        will use this edge_id when generating data for each sensor.
         
         Args:
             sensor_type: One of 'speed', 'weather', 'camera'
             
         Returns:
-            Sensor data dict with gateway_id, or None if no sensors
+            Sensor data dict with readings, or None if no sensors
         """
+        sensors_list = self.sensors_config.get(sensor_type, [])
+        if not sensors_list:
+            return None
+        
         # Get sensor-specific data from appropriate simulator
+        # Pass the full sensor configs (which include per-sensor edge_id)
         if sensor_type == 'speed':
             sensor_data = self.speed_simulator.generate_data(
-                self.sensors_config.get('speed', []),
-                self.gateway_id,
-                self._sensors_edge_id
+                sensors_list,
+                self.gateway_id
             )
         elif sensor_type == 'weather':
             sensor_data = self.weather_simulator.generate_data(
-                self.sensors_config.get('weather', []),
-                self.gateway_id,
-                self._sensors_edge_id
+                sensors_list,
+                self.gateway_id
             )
         elif sensor_type == 'camera':
             sensor_data = self.camera_simulator.generate_data(
-                self.sensors_config.get('camera', []),
-                self.gateway_id,
-                self._sensors_edge_id
+                sensors_list,
+                self.gateway_id
             )
         else:
             return None

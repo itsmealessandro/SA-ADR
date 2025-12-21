@@ -18,11 +18,11 @@
     },
     "simulation": {
         "sampling_interval_seconds": 3,
-        "gateways_per_instance": 100,
-        "sensors_per_gateway": {
-            "speed": 2,
+        "gateways_per_instance": 5,
+        "sensors_per_edge": {
+            "speed": 1,
             "weather": 1,
-            "camera": 2
+            "camera": 1
         }
     },
     "managed_resources": {

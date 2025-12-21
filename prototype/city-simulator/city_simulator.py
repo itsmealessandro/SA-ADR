@@ -5,22 +5,28 @@ City Simulator - Emergency Management System
 Main entry point for the L'Aquila Emergency Management System simulator.
 
 Architecture:
-- Loads city configuration from JSON (districts, edge ranges)
-- Dynamically generates gateways and sensors based on edge IDs (E-00000 to E-03458)
-- Creates EdgeManager (Gateway) for each assigned edge
-- Each EdgeManager runs in a separate thread
+- Loads city configuration from JSON (districts, simulation settings)
+- Creates a configurable number of gateways per instance
+- Each gateway manages sensors spread across MULTIPLE city graph edges (E-00000 to E-03458)
+- Sensors have individual edge_id based on which graph edge they monitor
 - Supports horizontal scaling via INSTANCE_ID and TOTAL_INSTANCES env vars
+
+Key Concepts:
+- Gateway: Physical device that collects/aggregates sensor data in an area
+- Edge (city graph): Road segment identified by E-XXXXX (E-00000 to E-03458)
+- Sensor: Individual monitoring device placed on a specific graph edge
 
 Horizontal Scaling:
 - INSTANCE_ID: Current instance (0, 1, 2, ..., N-1)
 - TOTAL_INSTANCES: Total number of instances
-- Each instance handles a partition of the total edge range
+- Each instance creates `gateways_per_instance` gateways
+- Edges are partitioned across all gateways in the system
 
-This simulator demonstrates:
-- Edge computing with local processing
-- Concurrent operations with threading
-- Resilient message handling with buffering
-- Dynamic configuration and horizontal scaling
+Example with 3 instances, 5 gateways each (15 total gateways):
+- 3459 edges / 15 gateways ≈ 231 edges per gateway
+- Gateway GW-00000 monitors sensors on edges E-00000 to E-00230
+- Gateway GW-00001 monitors sensors on edges E-00231 to E-00461
+- etc.
 """
 
 import json
@@ -40,7 +46,7 @@ from common.kafka_utils import create_kafka_producer
 # Import our modular components
 from edge_manager import EdgeManager
 
-# Configure logging with clear formatting
+# Initial logging configuration (will be updated from config)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - [%(threadName)s] - %(name)s - %(levelname)s - %(message)s'
@@ -64,18 +70,8 @@ def load_city_config() -> Dict[str, Any]:
     """
     Load city configuration from JSON file.
     
-    The configuration includes:
-    - City metadata (name, location)
-    - Graph configuration (edge ranges)
-    - Simulation parameters (sensors per gateway)
-    - Districts with their edge ranges
-    
     Returns:
         Dict with complete city configuration
-        
-    Raises:
-        FileNotFoundError: If config file not found
-        json.JSONDecodeError: If JSON is malformed
     """
     try:
         with open(CITY_CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -91,13 +87,13 @@ def load_city_config() -> Dict[str, Any]:
 
 
 def generate_edge_id(index: int) -> str:
-    """Generate edge ID in format E-XXXXX."""
+    """Generate city graph edge ID in format E-XXXXX."""
     return f"E-{index:05d}"
 
 
-def generate_gateway_id(edge_id: str) -> str:
-    """Generate gateway ID from edge ID."""
-    return f"GW-{edge_id}"
+def generate_gateway_id(gateway_index: int) -> str:
+    """Generate gateway ID in format GW-XXXXX."""
+    return f"GW-{gateway_index:05d}"
 
 
 def find_district_for_edge(districts: List[Dict], edge_index: int) -> Dict:
@@ -105,11 +101,11 @@ def find_district_for_edge(districts: List[Dict], edge_index: int) -> Dict:
     Find which district an edge belongs to based on edge ranges.
     
     Args:
-        districts: List of district configurations
+        districts: List of district configurations with edge_range
         edge_index: Edge index (0-3458)
         
     Returns:
-        District configuration dict
+        District configuration dict, or first district as fallback
     """
     for district in districts:
         edge_range = district.get('edge_range', {})
@@ -117,253 +113,260 @@ def find_district_for_edge(districts: List[Dict], edge_index: int) -> Dict:
         end = edge_range.get('end', 0)
         if start <= edge_index <= end:
             return district
-    # Default to first district if not found
     return districts[0] if districts else None
 
 
-def generate_sensor_configs(edge_id: str, sensors_per_gateway: Dict[str, int]) -> Dict[str, List[Dict]]:
-    """
-    Dynamically generate sensor configurations for a gateway.
-    
-    Args:
-        edge_id: The edge ID (E-XXXXX)
-        sensors_per_gateway: Dict with count per sensor type {'speed': 2, 'weather': 1, 'camera': 2}
-        
-    Returns:
-        Dict mapping sensor types to list of sensor configs
-    """
-    sensors = {}
-    
-    for sensor_type, count in sensors_per_gateway.items():
-        sensors[sensor_type] = []
-        for i in range(count):
-            sensor_id = f"{sensor_type}-{edge_id}-{chr(97 + i)}"  # e.g., speed-E-00000-a
-            
-            # Generate small random offsets for sensor positions
-            offset_lat = random.uniform(-0.0002, 0.0002)
-            offset_lon = random.uniform(-0.0002, 0.0002)
-            
-            sensors[sensor_type].append({
-                'sensor_id': sensor_id,
-                'location': f"{sensor_type.capitalize()} sensor {i + 1}",
-                'offset_lat': round(offset_lat, 6),
-                'offset_lon': round(offset_lon, 6)
-            })
-    
-    return sensors
-
-
-def calculate_instance_edge_range(
-    total_edges: int, 
-    instance_id: int, 
-    total_instances: int
+def calculate_gateway_edge_range(
+    total_edges: int,
+    total_gateways: int,
+    gateway_global_index: int
 ) -> Tuple[int, int]:
     """
-    Calculate the edge range for this instance.
+    Calculate which city graph edges a gateway is responsible for.
     
-    Divides the total edges evenly across instances.
+    Distributes edges evenly across all gateways in the system.
     
     Args:
-        total_edges: Total number of edges (e.g., 3459)
-        instance_id: This instance's ID (0-indexed)
-        total_instances: Total number of instances
+        total_edges: Total number of city graph edges (3459)
+        total_gateways: Total gateways across all instances
+        gateway_global_index: This gateway's global index (0 to total_gateways-1)
         
     Returns:
-        Tuple of (start_index, end_index) inclusive
+        Tuple of (start_edge_index, end_edge_index) inclusive
     """
-    edges_per_instance = total_edges // total_instances
-    remainder = total_edges % total_instances
+    edges_per_gateway = total_edges // total_gateways
+    remainder = total_edges % total_gateways
     
-    # Distribute remainder across first instances
-    if instance_id < remainder:
-        start = instance_id * (edges_per_instance + 1)
-        end = start + edges_per_instance
+    if gateway_global_index < remainder:
+        start = gateway_global_index * (edges_per_gateway + 1)
+        end = start + edges_per_gateway
     else:
-        start = instance_id * edges_per_instance + remainder
-        end = start + edges_per_instance - 1
+        start = gateway_global_index * edges_per_gateway + remainder
+        end = start + edges_per_gateway - 1
     
-    return start, end
+    return start, min(end, total_edges - 1)
+
+
+def generate_sensors_for_gateway(
+    gateway_id: str,
+    edge_start: int,
+    edge_end: int,
+    sensors_per_edge: Dict[str, int],
+    gateway_location: Dict[str, float]
+) -> Dict[str, List[Dict]]:
+    """
+    Generate sensor configurations for a gateway covering multiple edges.
+    
+    Each sensor is assigned to a specific city graph edge within the gateway's range.
+    
+    Args:
+        gateway_id: The gateway ID (GW-XXXXX)
+        edge_start: First edge index this gateway covers
+        edge_end: Last edge index this gateway covers (inclusive)
+        sensors_per_edge: Dict with sensor count per type per edge
+        gateway_location: Gateway's base location for calculating sensor positions
+        
+    Returns:
+        Dict mapping sensor types to list of sensor configs with edge_id
+    """
+    sensors = {'speed': [], 'weather': [], 'camera': []}
+    
+    for edge_index in range(edge_start, edge_end + 1):
+        edge_id = generate_edge_id(edge_index)
+        
+        for sensor_type, count in sensors_per_edge.items():
+            for i in range(count):
+                sensor_id = f"{sensor_type}-{edge_id}-{chr(97 + i)}"
+                
+                # Position sensors with offset from gateway location
+                # Distribute based on edge index for spatial spread
+                edge_offset = (edge_index - edge_start) / max(1, edge_end - edge_start)
+                offset_lat = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
+                offset_lon = random.uniform(-0.01, 0.01) + (edge_offset * 0.02 - 0.01)
+                
+                sensors[sensor_type].append({
+                    'sensor_id': sensor_id,
+                    'edge_id': edge_id,  # Each sensor knows which graph edge it monitors
+                    'location': f"{sensor_type.capitalize()} on {edge_id}",
+                    'offset_lat': round(offset_lat, 6),
+                    'offset_lon': round(offset_lon, 6)
+                })
+    
+    return sensors
 
 
 class CitySimulator:
     """
     Main City Simulator with Horizontal Scaling Support
     
-    Coordinates all edge managers and handles system lifecycle.
+    Creates gateways that each manage sensors across multiple city graph edges.
     Supports splitting workload across multiple instances.
-    
-    Responsibilities:
-    - Load configuration
-    - Initialize Kafka connection
-    - Dynamically generate gateways based on edge ranges
-    - Create and start EdgeManagers
-    - Handle graceful shutdown
     """
     
     def __init__(self):
         """Initialize the city simulator."""
-        # Load configuration
         self.city_config = load_city_config()
         self.city_name = self.city_config['city']['name']
         
-        # Get configuration parameters
+        # Configuration
         self.graph_config = self.city_config.get('graph', {})
         self.simulation_config = self.city_config.get('simulation', {})
-        managed_resources = self.city_config.get('managed_resources', {})
-        self.monitor_interval = managed_resources.get('monitor_interval_seconds', 3)
         
-        # Get sensors per gateway configuration
-        self.sensors_per_gateway = self.simulation_config.get('sensors_per_gateway', {
-            'speed': 2,
+        # Gateway and sensor configuration
+        self.gateways_per_instance = self.simulation_config.get('gateways_per_instance', 5)
+        self.sampling_interval = self.simulation_config.get('sampling_interval_seconds', 3)
+        self.sensors_per_edge = self.simulation_config.get('sensors_per_edge', {
+            'speed': 1,
             'weather': 1,
-            'camera': 2
+            'camera': 1
         })
+        # Fallback to sensors_per_gateway if sensors_per_edge not defined
+        if 'sensors_per_edge' not in self.simulation_config:
+            self.sensors_per_edge = self.simulation_config.get('sensors_per_gateway', {
+                'speed': 1,
+                'weather': 1,
+                'camera': 1
+            })
         
-        # Calculate this instance's edge range
-        total_edges = self.graph_config.get('total_edges', 3459)
-        self.edge_start, self.edge_end = calculate_instance_edge_range(
-            total_edges, INSTANCE_ID, TOTAL_INSTANCES
-        )
+        # Apply logging configuration from config
+        managed_resources = self.city_config.get('managed_resources', {})
+        logging_config = managed_resources.get('logging', {})
+        log_level = logging_config.get('level', 'INFO')
+        logging.getLogger().setLevel(getattr(logging, log_level, logging.INFO))
         
-        # Initialize Kafka producer (shared across all edges)
+        # Calculate totals
+        self.total_edges = self.graph_config.get('total_edges', 3459)
+        self.total_gateways = self.gateways_per_instance * TOTAL_INSTANCES
+        
+        # Calculate this instance's gateway range
+        self.gateway_start = INSTANCE_ID * self.gateways_per_instance
+        self.gateway_end = self.gateway_start + self.gateways_per_instance - 1
+        
+        # Initialize Kafka
         self.kafka_producer = self._init_kafka_producer()
         
-        # Threading control
+        # Threading
         self.stop_event = threading.Event()
-        self.edge_managers = []
-        self.edge_threads = []
+        self.gateways = []
+        self.gateway_threads = []
         
-        # Initialize edge managers dynamically
-        self._initialize_edges()
+        # Initialize gateways
+        self._initialize_gateways()
         
         logger.info(f"✓ CitySimulator initialized for {self.city_name}")
         logger.info(f"  Instance: {INSTANCE_ID + 1} of {TOTAL_INSTANCES}")
-        logger.info(f"  Edge range: E-{self.edge_start:05d} to E-{self.edge_end:05d}")
-        logger.info(f"  Total gateways: {len(self.edge_managers)}")
+        logger.info(f"  Gateways: {self.gateways_per_instance} (global: GW-{self.gateway_start:05d} to GW-{self.gateway_end:05d})")
+        logger.info(f"  Total edges in city: {self.total_edges}")
+        logger.info(f"  Edges per gateway: ~{self.total_edges // self.total_gateways}")
     
     def _init_kafka_producer(self):
-        """
-        Initialize Kafka producer using common utilities.
-        
-        The producer is shared across all edge managers (thread-safe).
-        Uses the shared kafka_utils module for consistent connection handling.
-        
-        Returns:
-            Connected KafkaProducer instance
-            
-        Raises:
-            Exception: If connection fails after all retries
-        """
+        """Initialize Kafka producer."""
         producer = create_kafka_producer(
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             max_retries=10,
             retry_delay=5
         )
-        
-        logger.info(f"✓ City simulator Kafka producer ready (topics: {list(KAFKA_TOPICS.values())})")
+        logger.info(f"✓ Kafka producer ready (topics: {list(KAFKA_TOPICS.values())})")
         return producer
     
-    def _initialize_edges(self):
+    def _initialize_gateways(self):
         """
-        Initialize EdgeManager for each edge in this instance's range.
+        Initialize gateways for this instance.
         
-        Dynamically generates gateway configurations based on edge IDs.
-        Each edge gets one gateway with configured sensors.
+        Each gateway manages sensors across a range of city graph edges.
         """
         districts = self.city_config.get('districts', [])
         
-        for edge_index in range(self.edge_start, self.edge_end + 1):
-            # Generate IDs
-            edge_id = generate_edge_id(edge_index)
-            gateway_id = generate_gateway_id(edge_id)
+        for local_idx in range(self.gateways_per_instance):
+            gateway_global_idx = self.gateway_start + local_idx
+            gateway_id = generate_gateway_id(gateway_global_idx)
             
-            # Find district for this edge
-            district = find_district_for_edge(districts, edge_index)
-            if not district:
-                continue
+            # Calculate which edges this gateway covers
+            edge_start, edge_end = calculate_gateway_edge_range(
+                self.total_edges,
+                self.total_gateways,
+                gateway_global_idx
+            )
             
-            district_id = district['district_id']
-            district_center = district.get('center', {'latitude': 42.35, 'longitude': 13.40})
+            # Find primary district for this gateway (based on middle edge)
+            middle_edge = (edge_start + edge_end) // 2
+            district = find_district_for_edge(districts, middle_edge)
+            district_id = district['district_id'] if district else 'district-unknown'
+            district_center = district.get('center', {'latitude': 42.35, 'longitude': 13.40}) if district else {'latitude': 42.35, 'longitude': 13.40}
             
-            # Generate location with small random offset from district center
+            # Gateway location (near district center with small offset)
             location = {
-                'latitude': district_center['latitude'] + random.uniform(-0.02, 0.02),
-                'longitude': district_center['longitude'] + random.uniform(-0.02, 0.02)
+                'latitude': district_center['latitude'] + random.uniform(-0.005, 0.005),
+                'longitude': district_center['longitude'] + random.uniform(-0.005, 0.005)
             }
             
-            # Generate sensor configurations
-            sensors = generate_sensor_configs(edge_id, self.sensors_per_gateway)
+            # Generate sensors for all edges this gateway covers
+            sensors = generate_sensors_for_gateway(
+                gateway_id,
+                edge_start,
+                edge_end,
+                self.sensors_per_edge,
+                location
+            )
             
-            # Build edge configuration
-            edge_config = {
+            # Build gateway configuration
+            gateway_config = {
                 'gateway_id': gateway_id,
-                'edge_id': edge_id,
-                'name': f"Gateway at {edge_id}",
+                'name': f"Gateway {gateway_id} ({edge_end - edge_start + 1} edges)",
                 'location': location,
-                'sensors': sensors
+                'sensors': sensors,
+                'edge_range': {'start': edge_start, 'end': edge_end}
             }
             
-            # Create EdgeManager for this edge
-            edge_manager = EdgeManager(
+            # Create EdgeManager (Gateway)
+            gateway = EdgeManager(
                 district_id=district_id,
-                edge_config=edge_config,
+                edge_config=gateway_config,
                 kafka_producer=self.kafka_producer,
                 kafka_topics=KAFKA_TOPICS,
-                stop_event=self.stop_event
+                stop_event=self.stop_event,
+                sampling_interval=self.sampling_interval
             )
             
-            self.edge_managers.append(edge_manager)
+            self.gateways.append(gateway)
+            
+            # Log gateway info
+            total_sensors = sum(len(s) for s in sensors.values())
+            logger.info(f"  {gateway_id}: edges E-{edge_start:05d} to E-{edge_end:05d}, {total_sensors} sensors")
         
-        logger.info(f"  Initialized {len(self.edge_managers)} edge managers")
+        logger.info(f"  Initialized {len(self.gateways)} gateways")
     
-    def start_edges(self):
-        """
-        Start all edge managers in separate threads.
+    def start_gateways(self):
+        """Start all gateways in separate threads."""
+        logger.info("Starting all gateways...")
         
-        Each edge runs independently in its own thread, allowing
-        concurrent sensor data generation and transmission.
-        """
-        logger.info("Starting all edge managers...")
-        
-        for edge_manager in self.edge_managers:
-            # Create thread for this edge
+        for gateway in self.gateways:
             thread = threading.Thread(
-                target=edge_manager.run,
-                name=f"GW-{edge_manager.gateway_id}",
-                daemon=True  # Thread will stop when main program exits
+                target=gateway.run,
+                name=f"{gateway.gateway_id}",
+                daemon=True
             )
             thread.start()
-            self.edge_threads.append(thread)
+            self.gateway_threads.append(thread)
         
-        logger.info(f"✓ Started {len(self.edge_threads)} edge threads")
+        logger.info(f"✓ Started {len(self.gateway_threads)} gateway threads")
     
     def run(self):
-        """
-        Run the city simulator.
-        
-        Main execution flow:
-        1. Display startup information
-        2. Start all edge manager threads
-        3. Wait until interrupted
-        4. Perform graceful shutdown
-        """
-        # Display startup banner
+        """Run the city simulator."""
         logger.info("=" * 70)
         logger.info(f"🏙️  {self.city_name} Emergency Management System")
         logger.info("=" * 70)
         logger.info(f"📊 Configuration:")
         logger.info(f"   Instance: {INSTANCE_ID + 1} of {TOTAL_INSTANCES}")
-        logger.info(f"   Edge Range: E-{self.edge_start:05d} to E-{self.edge_end:05d}")
-        logger.info(f"   Gateways: {len(self.edge_managers)}")
-        logger.info(f"   Sensors per Gateway: {self.sensors_per_gateway}")
+        logger.info(f"   Gateways this instance: {len(self.gateways)}")
+        logger.info(f"   Total gateways (all instances): {self.total_gateways}")
+        logger.info(f"   City graph edges: {self.total_edges}")
+        logger.info(f"   Sensors per edge: {self.sensors_per_edge}")
         logger.info(f"   Kafka Topics: {KAFKA_TOPICS}")
         logger.info("=" * 70)
         
         try:
-            # Start all edge managers
-            self.start_edges()
-            
-            # Keep main thread alive
+            self.start_gateways()
             logger.info("✓ System running. Press Ctrl+C to stop.")
             
             while not self.stop_event.is_set():
@@ -375,36 +378,18 @@ class CitySimulator:
             self.stop()
     
     def stop(self):
-        """
-        Stop all edge managers and cleanup resources.
-        
-        Performs graceful shutdown:
-        1. Signal all threads to stop
-        2. Wait for threads to finish
-        3. Close Kafka connection
-        """
-        logger.info("Stopping all edge managers...")
-        
-        # Signal all threads to stop
+        """Stop all gateways and cleanup."""
+        logger.info("Stopping all gateways...")
         self.stop_event.set()
         
-        # Wait for threads to finish (with timeout)
-        for thread in self.edge_threads:
+        for thread in self.gateway_threads:
             thread.join(timeout=5)
         
-        # Close Kafka producer
         self.kafka_producer.close()
-        
         logger.info("✓ City simulator stopped cleanly")
 
 
 if __name__ == '__main__':
-    """
-    Main entry point.
-    
-    Creates and runs the CitySimulator.
-    Handles any startup errors gracefully.
-    """
     try:
         simulator = CitySimulator()
         simulator.run()

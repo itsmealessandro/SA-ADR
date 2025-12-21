@@ -63,7 +63,7 @@ class SpeedSensorSimulator(SensorSimulator):
         # Moving average window - stores last 10 aggregated readings
         self.speed_window = deque(maxlen=10)
     
-    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None, edge_id: str = None) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated speed data from multiple speed sensors.
         
@@ -74,9 +74,9 @@ class SpeedSensorSimulator(SensorSimulator):
         4. Calculate edge-level speed (average of window)
         
         Args:
-            sensors_config: List of sensor configurations with IDs and positions
+            sensors_config: List of sensor configurations with IDs, positions,
+                           and individual edge_id for each sensor
             gateway_id: ID of the gateway collecting this data
-            edge_id: ID of the graph edge where sensors are located
             
         Returns:
             Dict with aggregated speed data, or None if no sensors configured
@@ -91,11 +91,12 @@ class SpeedSensorSimulator(SensorSimulator):
             current_speed = random.uniform(20, 120)
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
                 'sensor_type': 'speed',
                 'gateway_id': gateway_id,
-                'edge_id': edge_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'speed_kmh': round(current_speed, 2),
                 'latitude': lat,
                 'longitude': lon,
@@ -136,7 +137,7 @@ class WeatherSensorSimulator(SensorSimulator):
         # Moving average window for temperature smoothing
         self.temp_window = deque(maxlen=10)
     
-    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None, edge_id: str = None) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated weather data from multiple weather stations.
         
@@ -147,9 +148,9 @@ class WeatherSensorSimulator(SensorSimulator):
         4. Weather conditions are assumed same for all sensors in area
         
         Args:
-            sensors_config: List of weather sensor configurations
+            sensors_config: List of weather sensor configurations with
+                           individual edge_id for each sensor
             gateway_id: ID of the gateway collecting this data
-            edge_id: ID of the graph edge where sensors are located
             
         Returns:
             Dict with aggregated weather data, or None if no sensors
@@ -171,11 +172,12 @@ class WeatherSensorSimulator(SensorSimulator):
             current_humidity = random.uniform(30, 95)
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
                 'sensor_type': 'weather',
                 'gateway_id': gateway_id,
-                'edge_id': edge_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'temperature_c': round(current_temp, 2),
                 'humidity': round(current_humidity, 2),
                 'weather_conditions': weather_conditions,
@@ -225,7 +227,7 @@ class CameraSensorSimulator(SensorSimulator):
         self.last_road_condition = 'clear'
         self.condition_persistence = 0  # Frames remaining with same condition
     
-    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None, edge_id: str = None) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated camera analytics from multiple cameras.
         
@@ -239,9 +241,9 @@ class CameraSensorSimulator(SensorSimulator):
         Criticality Priority: accident > flooding > obstacles > congestion > clear
         
         Args:
-            sensors_config: List of camera sensor configurations
+            sensors_config: List of camera sensor configurations with
+                           individual edge_id for each sensor
             gateway_id: ID of the gateway collecting this data
-            edge_id: ID of the graph edge where sensors are located
             
         Returns:
             Dict with aggregated road condition analysis, or None if no cameras
@@ -278,11 +280,12 @@ class CameraSensorSimulator(SensorSimulator):
             
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
                 'sensor_type': 'camera',
                 'gateway_id': gateway_id,
-                'edge_id': edge_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'road_condition': detected_condition,
                 'confidence': round(confidence, 3),
                 'vehicle_count': vehicle_count,
