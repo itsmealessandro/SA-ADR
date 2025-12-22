@@ -1,8 +1,6 @@
 package org.swarch;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Properties;
+import io.quarkus.scheduler.Scheduled;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -83,6 +81,7 @@ public class PlannerMain {
    * For each received symptom message, it selects an appropriate plan,
    * executes the strategy, and notifies the system.
    */
+  @Scheduled(every = "10s")
   void extract_symptoms() {
     System.out.println("########################################");
     System.out.println("listening for symptoms from analyzer...");

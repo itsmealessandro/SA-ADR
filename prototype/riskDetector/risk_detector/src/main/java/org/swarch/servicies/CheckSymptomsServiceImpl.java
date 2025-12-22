@@ -3,65 +3,57 @@ package org.swarch.servicies;
 import org.swarch.Symptom;
 import org.swarch.SymptomThreshold;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 
 @ApplicationScoped
 public class CheckSymptomsServiceImpl implements CheckSymptomsService {
 
+  @Inject
+  GetSensorDataService getSensorDataService;
+
   @Override
-  public Symptom checkSymptoms(Object dataToCheck) {
-    if (!(dataToCheck instanceof Map)) {
-      throw new IllegalArgumentException("dataToCheck must be a Map<String, Object>");
+  public List<Symptom> checkSymptoms(Object dataToCheck) {
+    // Extract sensor data from InfluxDB using GetSensorDataService
+    Map<String, Object> sensorData = (Map<String, Object>) getSensorDataService.extractDataFromDB();
+
+    // Now check symptoms based on the extracted data
+    return checkSymptomsFromData(sensorData);
+  }
+
+  private List<Symptom> checkSymptomsFromData(Map<String, Object> sensorData) {
+    List<Symptom> symptoms = new ArrayList<>();
+
+    // City metrics: speed -> TRAFFIC_JAM if < 80
+    if (sensorData.containsKey("city_metrics_sensor_speed_value")) {
+      double speed = (double) sensorData.get("city_metrics_sensor_speed_value");
+      if (speed < SymptomThreshold.TRAFFIC_JAM.getValue()) {
+        System.err.println("Symptom detected: TRAFFIC_JAM - Speed: " + speed + " < " + SymptomThreshold.TRAFFIC_JAM.getValue());
+        symptoms.add(Symptom.TRAFFIC_JAM);
+      }
     }
 
-    Map<String, Object> sensorData = (Map<String, Object>) dataToCheck;
-
-    if (sensorData.containsKey("traffic")
-        && (int) sensorData.get("traffic") > SymptomThreshold.TRAFFIC_JAM.getValue()) {
-      return Symptom.TRAFFIC_JAM;
+    // City metrics: temperature -> WEATHER_HAZARD if > 30.0
+    if (sensorData.containsKey("city_metrics_sensor_weather_value")) {
+      double temp = (double) sensorData.get("city_metrics_sensor_weather_value");
+      if (temp > 30.0) {
+        System.err.println("Symptom detected: WEATHER_HAZARD - Temperature: " + temp + " > 30.0");
+        symptoms.add(Symptom.WEATHER_HAZARD);
+      }
     }
 
-    if (sensorData.containsKey("roadStatus") && "blocked".equals(sensorData.get("roadStatus"))) {
-      return Symptom.ROAD_BLOCKED;
+    // City metrics: road_condition -> ROAD_BLOCKED if obstacles
+    if (sensorData.containsKey("city_metrics_sensor_camera_road_condition")) {
+      String roadCondition = (String) sensorData.get("city_metrics_sensor_camera_road_condition");
+      if ("obstacles".equals(roadCondition)) {
+        System.err.println("Symptom detected: ROAD_BLOCKED - Road Condition: " + roadCondition);
+        symptoms.add(Symptom.ROAD_BLOCKED);
+      }
     }
 
-    if (sensorData.containsKey("criticalAccess")
-        && (double) sensorData.get("criticalAccess") < SymptomThreshold.ACCESS_DROP.getValue()) {
-      return Symptom.ACCESS_DROP;
-    }
-
-    if (sensorData.containsKey("travelTime")
-        && (int) sensorData.get("travelTime") > SymptomThreshold.TRAVEL_DELAY.getValue()) {
-      return Symptom.TRAVEL_DELAY;
-    }
-
-    if (sensorData.containsKey("sensorAlive") && !(boolean) sensorData.get("sensorAlive")) {
-      return Symptom.SENSOR_FAILURE;
-    }
-
-    if (sensorData.containsKey("dataConsistency") && !(boolean) sensorData.get("dataConsistency")) {
-      return Symptom.DATA_DRIFT;
-    }
-
-    if (sensorData.containsKey("gatewayOnline") && !(boolean) sensorData.get("gatewayOnline")) {
-      return Symptom.GATEWAY_OFFLINE;
-    }
-
-    if (sensorData.containsKey("weatherSeverity")
-        && (int) sensorData.get("weatherSeverity") > SymptomThreshold.WEATHER_HAZARD.getValue()) {
-      return Symptom.WEATHER_HAZARD;
-    }
-
-    if (sensorData.containsKey("pollutionLevel")
-        && (int) sensorData.get("pollutionLevel") > SymptomThreshold.POLLUTION_SPIKE.getValue()) {
-      return Symptom.POLLUTION_SPIKE;
-    }
-
-    if (sensorData.containsKey("infrastructureStatus") && "outage".equals(sensorData.get("infrastructureStatus"))) {
-      return Symptom.INFRASTRUCTURE_OUTAGE;
-    }
-
-    return null;
+    return symptoms;
   }
 }

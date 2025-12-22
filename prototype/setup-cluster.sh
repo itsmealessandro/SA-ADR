@@ -28,8 +28,8 @@ docker build -t digital-twin/buildings-simulator:latest -f ./buildings-simulator
  echo -e "${GREEN}Successfully built Recommendation Manager${NC}"
 
 # Risk Manager
-echo -e "${BLUE}Building Risk Manager (digital-twin/risk-manager:latest)...${NC}"
-docker build -t digital-twin/risk-manager:latest ./recommendationManager
+echo -e "${BLUE}Building Risk Manager (digital-twin/risk-detector:latest)...${NC}"
+docker build -t digital-twin/risk-detector:latest ./riskDetector
 echo -e "${GREEN}Successfully built Risk Manager${NC}"
 
 # City Simulator
@@ -87,7 +87,7 @@ if [ "$(kubectl config current-context)" = "minikube" ]; then
     minikube image load digital-twin/data-producer:latest
 
     minikube image load digital-twin/recommendation-manager:latest 
-    minikube image load digital-twin/risk-manager:latest 
+    minikube image load digital-twin/risk-detector:latest 
 
     minikube image load digital-twin/city-simulator:latest
     minikube image load digital-twin/vehicles-simulator:latest
