@@ -54,7 +54,7 @@ const EMERGENCY_ASSETS = [
 
 // Simple Toast Component
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'info', onClose: () => void }) => (
-    <div className={`fixed bottom-6 right-6 p-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[70] ${type === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
+    <div className={`fixed bottom-6 right-6 p-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[2000] ${type === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
         }`}>
         {type === 'success' ? <CheckCircle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
         <p className="font-medium">{message}</p>
@@ -66,7 +66,7 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
 
 // Confirmation Modal
 const ConfirmationModal = ({ action, details, onConfirm, onCancel }: { action: string, details?: string, onConfirm: () => void, onCancel: () => void }) => (
-    <div className="fixed inset-0 bg-black/60 z-[80] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/60 z-[1100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border-t-4 border-red-600">
             <div className="flex items-center gap-3 mb-4 text-red-600">
                 <AlertTriangle className="w-8 h-8" />
@@ -210,7 +210,7 @@ const FloorSchematicModal = ({ floorIndex, buildingName, status, onClose }: { fl
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-[90] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/80 z-[1050] flex items-center justify-center p-4 backdrop-blur-sm animate-in zoom-in-95 duration-200">
             <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col border border-slate-700">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900 rounded-t-xl">
@@ -512,7 +512,7 @@ export function SimulationDashboard({ isOpen, onClose }: SimulationDashboardProp
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
