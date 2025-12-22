@@ -1,5 +1,6 @@
+import L from 'leaflet';
 import React from 'react';
-import { Icon, Marker, Popup } from 'react-leaflet';
+import { Marker, Popup } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import type { CameraSensorReading, Sensor, SpeedSensorReading } from '../../types';
 import { SensorStatus } from '../../types';
@@ -10,7 +11,7 @@ interface SensorMarkersProps {
 }
 
 // Cache icons by type and status
-const iconCache = new Map<string, Icon>();
+const iconCache = new Map<string, L.Icon>();
 
 const getSensorIcon = (type: string, status: string) => {
   const key = `${type}-${status}`;
