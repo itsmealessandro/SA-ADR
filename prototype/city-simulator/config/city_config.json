@@ -9,11 +9,11 @@
         "description": "Emergency Management System for L'Aquila city"
     },
     "graph": {
-        "total_edges": 3459,
+        "total_edges": 700,
         "edge_id_format": "E-{:05d}",
         "edge_id_range": {
-            "start": 0,
-            "end": 3458
+            "start": 2000,
+            "end": 2699
         }
     },
     "simulation": {
@@ -44,8 +44,8 @@
             "name": "Centro Storico",
             "description": "Historic city center with high pedestrian traffic",
             "edge_range": {
-                "start": 0,
-                "end": 499
+                "start": 2000,
+                "end": 2099
             },
             "center": {
                 "latitude": 42.3506,
@@ -57,8 +57,8 @@
             "name": "Collemaggio",
             "description": "Southern district with Basilica di Collemaggio",
             "edge_range": {
-                "start": 500,
-                "end": 999
+                "start": 2100,
+                "end": 2199
             },
             "center": {
                 "latitude": 42.3425,
@@ -70,8 +70,8 @@
             "name": "Fontecchio",
             "description": "Eastern residential district",
             "edge_range": {
-                "start": 1000,
-                "end": 1499
+                "start": 2200,
+                "end": 2299
             },
             "center": {
                 "latitude": 42.3489,
@@ -83,8 +83,8 @@
             "name": "Coppito",
             "description": "Western district with university and hospital",
             "edge_range": {
-                "start": 1500,
-                "end": 1999
+                "start": 2300,
+                "end": 2399
             },
             "center": {
                 "latitude": 42.3678,
@@ -96,7 +96,7 @@
             "name": "Pettino",
             "description": "Northern commercial district",
             "edge_range": {
-                "start": 2000,
+                "start": 2400,
                 "end": 2499
             },
             "center": {
@@ -110,7 +110,7 @@
             "description": "Southwestern mountain district",
             "edge_range": {
                 "start": 2500,
-                "end": 2999
+                "end": 2599
             },
             "center": {
                 "latitude": 42.3298,
@@ -122,8 +122,8 @@
             "name": "Paganica",
             "description": "Eastern suburban district",
             "edge_range": {
-                "start": 3000,
-                "end": 3458
+                "start": 2600,
+                "end": 2699
             },
             "center": {
                 "latitude": 42.3567,

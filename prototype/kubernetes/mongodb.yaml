@@ -36,11 +36,12 @@ spec:
           volumeMounts:
             - name: mongodb-state-data
               mountPath: /data/db
+          readinessProbe:
+            tcpSocket:
+              port: 27017
           livenessProbe:
-            exec:
-              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            tcpSocket:
+              port: 27017
       volumes:
         - name: mongodb-state-data
           persistentVolumeClaim:
@@ -96,11 +97,12 @@ spec:
           volumeMounts:
             - name: mongodb-notifications-data
               mountPath: /data/db
+          readinessProbe:
+            tcpSocket:
+              port: 27017
           livenessProbe:
-            exec:
-              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            tcpSocket:
+              port: 27017
       volumes:
         - name: mongodb-notifications-data
           persistentVolumeClaim:

@@ -99,3 +99,10 @@ spec:
                 configMapKeyRef:
                   name: digital-twin-config
                   key: KAFKA_TOPIC_VEHICLES
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "1"
+            limits:
+              memory: "1Gi"
+              cpu: "4"

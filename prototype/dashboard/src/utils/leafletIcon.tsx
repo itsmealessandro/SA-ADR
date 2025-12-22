@@ -14,8 +14,8 @@ import {
   WifiIcon,
 } from '@heroicons/react/24/solid';
 import { divIcon } from 'leaflet';
+import { Ambulance, Bus, Car, Motorbike } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
-
 interface IconOptions {
   color?: string;
   backgroundColor?: string;
@@ -44,10 +44,10 @@ export function createLucideIcon(
     gauge: SignalIcon,
     
     // Transport - Different icons for each type
-    bus: TruckIcon,           // Bus uses truck icon
+    bus: Bus,           // Bus uses truck icon
     truck: TruckIcon,         // Truck
-    car: HomeIcon,            // Car uses a simpler icon
-    motorcycle: SignalIcon,   // Motorcycle uses signal (smaller)
+    car: Car,            // Car uses a simpler icon
+    motorcycle: Motorbike,   // Motorcycle uses signal (smaller)
     
     // Weather
     cloud: CloudIcon,
@@ -70,7 +70,7 @@ export function createLucideIcon(
     camera: VideoCameraIcon,
     
     // Vehicles / Emergency - Distinct icons
-    ambulance: HeartIcon,           // Ambulance uses heart icon
+    ambulance: Ambulance,           // Ambulance uses heart icon
     'fire-truck': FireIcon,         // Fire truck uses fire icon
     police: ShieldCheckIcon,        // Police uses shield icon
     siren: SignalIcon,
