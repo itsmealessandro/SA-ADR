@@ -133,9 +133,9 @@ public class PlannerMain {
     try {
       NotificationMessage notification = new NotificationMessage(
           "Periodic Test Notification - System Status OK",
-          "LOW", // severity
+          "info", // severity
           "Recommendation Manager (TEST)", // source
-          System.currentTimeMillis() // timestamp
+          String.valueOf(System.currentTimeMillis()) // timestamp as string
       );
 
       String jsonMessage = objectMapper.writeValueAsString(notification);
@@ -189,9 +189,9 @@ public class PlannerMain {
     try {
       NotificationMessage notification = new NotificationMessage(
           "Symptom " + symptom.name() + ", Plan " + plan.name(),
-          symptom.name(), // severity
+          mapSeverity(symptom), // mapped severity
           "Recommendation Manager (PLANNER)", // source
-          System.currentTimeMillis() // timestamp
+          String.valueOf(System.currentTimeMillis()) // timestamp as string
       );
 
       String jsonMessage = objectMapper.writeValueAsString(notification);
@@ -208,6 +208,32 @@ public class PlannerMain {
 
     } catch (Exception e) {
       System.err.println("Error serializing notification: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Maps a Symptom to a notification severity level.
+   *
+   * @param symptom the symptom to map
+   * @return the corresponding severity string ("info", "warning", "error", "critical")
+   */
+  private String mapSeverity(Symptom symptom) {
+    switch (symptom) {
+      case TRAFFIC_JAM:
+      case ROAD_BLOCKED:
+      case ACCESS_DROP:
+      case TRAVEL_DELAY:
+        return "warning";
+      case SENSOR_FAILURE:
+      case DATA_DRIFT:
+      case GATEWAY_OFFLINE:
+        return "error";
+      case WEATHER_HAZARD:
+      case POLLUTION_SPIKE:
+      case INFRASTRUCTURE_OUTAGE:
+        return "critical";
+      default:
+        return "info";
     }
   }
 

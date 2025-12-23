@@ -5,12 +5,12 @@ public class NotificationMessage {
   private String message;
   private String severity;
   private String source;
-  private long timestamp;
+  private String timestamp;
 
   public NotificationMessage() {
   }
 
-  public NotificationMessage(String message, String severity, String source, long timestamp) {
+  public NotificationMessage(String message, String severity, String source, String timestamp) {
     this.message = message;
     this.severity = severity;
     this.source = source;
@@ -41,11 +41,11 @@ public class NotificationMessage {
     this.source = source;
   }
 
-  public long getTimestamp() {
+  public String getTimestamp() {
     return timestamp;
   }
 
-  public void setTimestamp(long timestamp) {
+  public void setTimestamp(String timestamp) {
     this.timestamp = timestamp;
   }
 }
