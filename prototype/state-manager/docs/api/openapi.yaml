@@ -213,14 +213,14 @@ paths:
             type: string
             example: district-roio
       responses:
-        '200':
-          description: Weather stations retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WeatherStation'
+        # '200':
+        #   description: Weather stations retrieved successfully
+        #   content:
+        #     application/json:
+        #       schema:
+        #         type: array
+        #         items:
+        #           $ref: '#/components/schemas/WeatherStation'
         '404':
           description: District not found
           content:
@@ -263,14 +263,14 @@ paths:
       description: Retrieve all vehicles data including ambulances, fire trucks, police vehicles, and other monitored vehicles
       operationId: getVehicles
       responses:
-        '200':
-          description: Vehicles retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Vehicle'
+        # '200':
+        #   description: Vehicles retrieved successfully
+        #   content:
+        #     application/json:
+        #       schema:
+        #         type: array
+        #         items:
+        #           $ref: '#/components/schemas/Vehicle'
         '500':
           description: Internal server error
           content:
@@ -364,10 +364,6 @@ components:
               type: string
               enum: [connected, disconnected]
               example: connected
-        timestamp:
-          type: string
-          format: date-time
-          example: '2024-12-08T10:30:00.000Z'
 
     CityStateResponse:
       type: object
