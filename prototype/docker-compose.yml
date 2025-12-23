@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # Infrastructure services
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  influxdb:
+    image: influxdb:2.7
+    hostname: influxdb
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpassword
+      DOCKER_INFLUXDB_INIT_ORG: emergency-mgmt
+      DOCKER_INFLUXDB_INIT_BUCKET: city_metrics
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: digital-twin-admin-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # City Simulator instances - Horizontal scaling
+  # Each instance handles a partition of the 3459 edges
+  city-simulator-0:
+    build:
+      context: ./city-simulator
+      dockerfile: Dockerfile
+    container_name: city-simulator-0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_GATEWAY: city-gateway-data
+      INSTANCE_ID: "0"
+      TOTAL_INSTANCES: "3"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  city-simulator-1:
+    build:
+      context: ./city-simulator
+      dockerfile: Dockerfile
+    container_name: city-simulator-1
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_GATEWAY: city-gateway-data
+      INSTANCE_ID: "1"
+      TOTAL_INSTANCES: "3"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  city-simulator-2:
+    build:
+      context: ./city-simulator
+      dockerfile: Dockerfile
+    container_name: city-simulator-2
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_GATEWAY: city-gateway-data
+      INSTANCE_ID: "2"
+      TOTAL_INSTANCES: "3"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # City Monitor - consumes gateway data and writes to InfluxDB
+  city-monitor:
+    build:
+      context: ./city-monitor
+      dockerfile: Dockerfile
+    container_name: city-monitor
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: city-gateway-data
+      KAFKA_GROUP_ID: city-monitor-group
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_TOKEN: digital-twin-admin-token
+      INFLUXDB_ORG: emergency-mgmt
+      INFLUXDB_BUCKET: city_metrics
+    depends_on:
+      kafka:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  influxdb-data:

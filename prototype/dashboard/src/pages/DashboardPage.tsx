@@ -2,14 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { ErrorMessage, LoadingSpinner } from '../components/common';
 import { Layout } from '../components/layout';
 import {
-    BuildingMarkers,
-    BusMarkers,
-    Map,
-    MapControls,
-    RoadSegmentLayer,
-    SensorMarkers,
-    WeatherStationMarkers,
-    type LayerType
+  BuildingMarkers,
+  GatewayMarkers,
+  Map,
+  MapControls,
+  RoadSegmentLayer,
+  SensorMarkers,
+  VehicleMarkers,
+  WeatherStationMarkers,
+  type LayerType
 } from '../components/map';
 import { useNotificationPolling } from '../services/useNotificationPolling';
 import { webSocketService } from '../services/webSocketService';
@@ -69,14 +70,20 @@ export function DashboardPage() {
     [cityState?.districts]
   );
   
+  const allGateways = useMemo(
+    () => cityState?.districts.flatMap((district) => district.gateways) || [],
+    [cityState?.districts]
+  );
+  
   const allRoadSegments = useMemo(
     () => cityState?.cityGraph.edges || [],
     [cityState?.cityGraph.edges]
   );
-  
-  const allBuses = useMemo(
-    () => cityState?.publicTransport.buses || [],
-    [cityState?.publicTransport.buses]
+
+  // Get vehicles directly from city state
+  const allVehicles = useMemo(
+    () => cityState?.vehicles || [],
+    [cityState?.vehicles]
   );
 
   // Map controls state
@@ -84,11 +91,14 @@ export function DashboardPage() {
     roads: true,
     buildings: true,
     sensors: true,
-    weather: true,
-    buses: true,
+    weather: false, // Default off - too many markers
+    vehicles: true,
+    gateways: false, // Default off
   });
 
   const [sensorFilters, setSensorFilters] = useState<string[]>([]);
+  const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
+  const [vehicleTypeFilters, setVehicleTypeFilters] = useState<string[]>([]);
 
   const handleToggleLayer = (layer: LayerType) => {
     setVisibleLayers((prev) => ({
@@ -105,17 +115,64 @@ export function DashboardPage() {
     );
   };
 
+  const handleSelectGateway = (gatewayId: string | null) => {
+    setSelectedGateway(gatewayId);
+  };
+
+  const handleToggleVehicleTypeFilter = (type: string) => {
+    setVehicleTypeFilters((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
+  };
+
   // Derive available sensor types
   const availableSensorTypes = useMemo(() => {
     const types = new Set(allSensors.map((s) => s.type));
     return Array.from(types).sort();
   }, [allSensors]);
 
-  // Filter sensors based on active filters
+  // Derive available gateways
+  const availableGateways = useMemo(() => {
+    const gateways = new Set(allSensors.map((s) => s.gatewayId).filter(Boolean));
+    return Array.from(gateways).sort() as string[];
+  }, [allSensors]);
+
+  // Derive available vehicle types
+  const availableVehicleTypes = useMemo(() => {
+    const types = new Set(allVehicles.map((v) => v.type));
+    return Array.from(types).sort();
+  }, [allVehicles]);
+
+  // Filter sensors based on active filters and selected gateway
   const filteredSensors = useMemo(() => {
-    if (sensorFilters.length === 0) return allSensors;
-    return allSensors.filter((s) => !sensorFilters.includes(s.type));
-  }, [allSensors, sensorFilters]);
+    let filtered = allSensors;
+    
+    // Filter by gateway
+    if (selectedGateway) {
+      filtered = filtered.filter((s) => s.gatewayId === selectedGateway);
+    }
+    
+    // Filter by sensor type
+    if (sensorFilters.length > 0) {
+      filtered = filtered.filter((s) => !sensorFilters.includes(s.type));
+    }
+    
+    return filtered;
+  }, [allSensors, selectedGateway, sensorFilters]);
+
+  // Filter weather stations by gateway (if selected)
+  const filteredWeatherStations = useMemo(() => {
+    if (!selectedGateway) return allWeatherStations;
+    return allWeatherStations.filter((s) => s.gatewayId === selectedGateway);
+  }, [allWeatherStations, selectedGateway]);
+
+  // Filter vehicles by type
+  const filteredVehicles = useMemo(() => {
+    if (vehicleTypeFilters.length === 0) return allVehicles;
+    return allVehicles.filter((v) => !vehicleTypeFilters.includes(v.type));
+  }, [allVehicles, vehicleTypeFilters]);
 
   return (
     <Layout>
@@ -143,6 +200,12 @@ export function DashboardPage() {
               sensorFilters={sensorFilters}
               availableSensorTypes={availableSensorTypes}
               onToggleSensorFilter={handleToggleSensorFilter}
+              availableGateways={availableGateways}
+              selectedGateway={selectedGateway}
+              onSelectGateway={handleSelectGateway}
+              vehicleTypeFilters={vehicleTypeFilters}
+              availableVehicleTypes={availableVehicleTypes}
+              onToggleVehicleTypeFilter={handleToggleVehicleTypeFilter}
             />
 
             {/* Road segments as base layer */}
@@ -162,12 +225,17 @@ export function DashboardPage() {
             
             {/* Weather station markers */}
             {visibleLayers.weather && (
-              <WeatherStationMarkers stations={allWeatherStations} />
+              <WeatherStationMarkers stations={filteredWeatherStations} />
             )}
             
-            {/* Bus markers */}
-            {visibleLayers.buses && (
-              <BusMarkers buses={allBuses} />
+            {/* Vehicle markers */}
+            {visibleLayers.vehicles && (
+              <VehicleMarkers vehicles={filteredVehicles} />
+            )}
+            
+            {/* Gateway markers */}
+            {visibleLayers.gateways && (
+              <GatewayMarkers gateways={allGateways} />
             )}
           </Map>
         )}

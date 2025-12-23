@@ -486,7 +486,7 @@
       },
       "size": {
         "width": 380.6666259765625,
-        "height": 383.25
+        "height": 389.6499938964844
       },
       "messagePorts": [
         {
@@ -606,6 +606,26 @@
             "height": 40
           },
           "properties": {}
+        },
+        {
+          "id": "node-1763815215402_behavior_1766485306573",
+          "name": "Verify Data",
+          "type": "VerifyData",
+          "position": {
+            "x": 183.9332275390625,
+            "y": 229.64999389648438
+          },
+          "size": {
+            "width": 120,
+            "height": 40
+          },
+          "properties": {
+            "QualityMetrics": [
+              "Uniqueness",
+              "Completeness",
+              "Validity"
+            ]
+          }
         }
       ],
       "internalLinks": [],
@@ -1332,6 +1352,26 @@
             "height": 40
           },
           "properties": {}
+        },
+        {
+          "id": "node-1763822055795_behavior_1766485563149",
+          "name": "Verify Data",
+          "type": "VerifyData",
+          "position": {
+            "x": 204.7999267578125,
+            "y": 220.699951171875
+          },
+          "size": {
+            "width": 120,
+            "height": 40
+          },
+          "properties": {
+            "QualityMetrics": [
+              "Completeness",
+              "Consistency",
+              "Validity"
+            ]
+          }
         }
       ],
       "internalLinks": [],

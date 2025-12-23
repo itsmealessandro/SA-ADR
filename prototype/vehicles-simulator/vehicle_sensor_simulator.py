@@ -430,6 +430,13 @@ class VehicleSensorSimulator:
                 # - "normal": Traffico normale
                 # - "standby": Veicolo in attesa/parcheggiato
                 'route_priority': self.route_planning.get('route_priority', 'normal')
+            },
+            
+            # === ROUTE PATH - Tracciato completo del percorso ===
+            # Permette la visualizzazione della polilinea sulla mappa
+            'route_path': {
+                'description': self.route_path.get('description', ''),
+                'waypoints': self.waypoints
             }
         }
         

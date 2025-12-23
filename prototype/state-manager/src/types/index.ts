@@ -3,8 +3,7 @@ export interface City {
   timestamp:         Date;
   metadata:          CityMetadata;
   districts:         District[];
-  publicTransport:   PublicTransport;
-  emergencyServices: EmergencyServices;
+  vehicles:          Vehicle[];
   cityGraph:         CityGraph;
 }
 
@@ -75,6 +74,56 @@ export interface District {
   sensors:         Sensor[];
   buildings:       Building[];
   weatherStations: WeatherStation[];
+  gateways:        Gateway[];
+}
+
+// Gateway data from city-simulator
+// Note: Gateways don't have edgeId - edge_id is a property of individual sensors
+export interface Gateway {
+  gatewayId:    string;
+  name:         string;
+  location:     GatewayLocation;
+  lastUpdated:  Date;
+  metadata:     GatewayMetadata;
+  sensors:      GatewaySensor[];
+}
+
+export interface GatewayLocation {
+  latitude:  number;
+  longitude: number;
+}
+
+export interface GatewayMetadata {
+  name:         string;
+  version:      string;
+  firmware:     string;
+  sensorCounts: {
+    speed:   number;
+    weather: number;
+    camera:  number;
+  };
+}
+
+// Unified sensor format from gateway
+export interface GatewaySensor {
+  sensorId:          string;
+  sensorType:        string;  // 'speed' | 'weather' | 'camera'
+  gatewayId:         string;
+  edgeId:            string;
+  latitude:          number;
+  longitude:         number;
+  unit:              string;
+  status:            string;
+  // Speed sensor fields
+  speedKmh?:         number;
+  // Weather sensor fields
+  temperatureC?:     number;
+  humidity?:         number;
+  weatherConditions?: string;
+  // Camera sensor fields
+  roadCondition?:    string;
+  confidence?:       number;
+  vehicleCount?:     number;
 }
 
 export interface Building {
@@ -82,23 +131,160 @@ export interface Building {
   name:             string;
   type:             string;
   location:         BuildingLocation;
-  floors:           number;
-  totalCapacity:    number;
-  currentOccupancy: number;
-  occupancyRate:    number;
-  sensors:          Sensor[];
   status:           string;
+  lastUpdated:      Date;
+  // Air quality sensors from buildings-simulator
+  airQuality?:      AirQualitySensorData[];
+  // Acoustic sensors from buildings-simulator
+  acoustic?:        AcousticSensorData[];
+  // Display sensors from buildings-simulator
+  displays?:        DisplaySensorData[];
+  // Managed resources from buildings-simulator
+  managedResources?: BuildingManagedResources;
+  // Legacy fields (for backwards compatibility)
+  floors?:          number;
+  totalCapacity?:   number;
+  currentOccupancy?: number;
+  occupancyRate?:   number;
+  sensors?:         Sensor[];
+}
+
+// Air quality sensor data from buildings-simulator
+export interface AirQualitySensorData {
+  sensorId:     string;
+  location:     string;
+  type:         string;
+  measurements: {
+    pm25?:      number;
+    pm10?:      number;
+    no2?:       number;
+    co?:        number;
+    o3?:        number;
+    voc?:       number;
+    co2?:       number;
+  };
+  lastReading:  string;
+  status:       string;
+}
+
+// Acoustic sensor data from buildings-simulator
+export interface AcousticSensorData {
+  sensorId:     string;
+  location:     string;
+  type:         string;
+  measurements: {
+    noiseLevel:   number;
+    peakDb?:      number;
+    averageDb1h?: number;
+  };
+  lastReading:  string;
+  status:       string;
+}
+
+// Display sensor data from buildings-simulator
+export interface DisplaySensorData {
+  sensorId:       string;
+  type:           string;
+  location:       string;
+  coordinates?:   { latitude: number; longitude: number };
+  currentMessage: string;
+  operational:    boolean;
+  lastUpdate:     string;
+}
+
+// Emergency exit from buildings-simulator
+export interface EmergencyExit {
+  exitId:      string;
+  location:    string;
+  floor:       number;
+  status:      string;
+  operational: boolean;
+  widthM:      number;
+  lastCheck:   string;
+}
+
+// Elevator from buildings-simulator
+export interface ElevatorData {
+  elevatorId:       string;
+  location:         string;
+  status:           string;
+  currentFloor:     number;
+  capacityPersons:  number;
+  faultDescription?: string;
+}
+
+// Building managed resources
+export interface BuildingManagedResources {
+  emergencyExits: EmergencyExit[];
+  elevators:      ElevatorData[];
 }
 
 export interface BuildingLocation {
-  latitude:  number;
-  longitude: number;
-  address:   string;
+  latitude:   number;
+  longitude:  number;
+  address:    string;
+  altitudeM?: number;
+}
+
+// Vehicle data from vehicles-simulator
+export interface Vehicle {
+  vehicleId:        string;
+  type:             string;
+  lastUpdated:      Date;
+  gpsPosition:      VehicleGpsPosition;
+  movement:         VehicleMovement;
+  managedResources: VehicleManagedResources;
+  sensors:          VehicleSensors;
+  routePlanning:    VehicleRoutePlanning;
+}
+
+export interface VehicleGpsPosition {
+  latitude:   number;
+  longitude:  number;
+  altitudeM:  number;
+}
+
+export interface VehicleMovement {
+  speedKmh:         number;
+  directionDegrees: number;
+  heading:          string;
+}
+
+export interface VehicleManagedResources {
+  batteryLevelPercent: number;
+  firmwareVersion:     string;
+}
+
+export interface VehicleSensors {
+  accelerometer: {
+    sensorId:             string;
+    incidentDetected:     boolean;
+    thresholdG:           number;
+    lastReadingTimestamp: string;
+  };
+}
+
+export interface VehicleRoutePlanning {
+  currentDestination?: {
+    latitude:     number;
+    longitude:    number;
+    locationName: string;
+  };
+  predictedDestinations: Array<{
+    latitude:     number;
+    longitude:    number;
+    locationName: string;
+    etaMinutes:   number;
+    probability:  number;
+  }>;
+  routePriority: string;
 }
 
 export interface Sensor {
   sensorId:    string;
   type:        string;
+  edgeId?:     string;  // Graph edge ID (E-00000 to E-03458)
+  gatewayId?:  string;  // Gateway ID that collected this sensor data
   floor?:      number;
   value:       number;
   unit:        string;
@@ -117,10 +303,45 @@ export interface SensorLocation {
   parkingLotId?:  string;
 }
 
+// Speed sensor reading from city-simulator
+export interface SpeedSensorReading {
+  sensor_id: string;
+  speed_kmh: number;
+  latitude: number;
+  longitude: number;
+}
+
+// Weather sensor reading from city-simulator
+export interface WeatherSensorReading {
+  sensor_id: string;
+  temperature_c: number;
+  humidity: number;
+  latitude: number;
+  longitude: number;
+}
+
+// Camera sensor reading from city-simulator
+export interface CameraSensorReading {
+  sensor_id: string;
+  road_condition: string;
+  confidence: number;
+  vehicle_count: number;
+  latitude: number;
+  longitude: number;
+}
+
+// Updated sensor metadata to support city-simulator data
 export interface SensorMetadata {
-  avgSpeed:         number;
-  vehicleCount:     number;
-  congestionStatus: string;
+  // Speed sensor metadata
+  avgSpeed?:         number;
+  sensorCount?:      number;
+  readings?:         SpeedSensorReading[] | WeatherSensorReading[] | CameraSensorReading[];
+  
+  // Camera sensor metadata
+  roadCondition?:    string;
+  confidence?:       number;
+  vehicleCount?:     number;
+  congestionStatus?: string;
 }
 
 export enum Status {
@@ -143,10 +364,16 @@ export interface Boundaries {
 export interface WeatherStation {
   stationId:   string;
   name:        string;
+  edgeId?:     string;  // Graph edge ID (E-00000 to E-03458)
+  gatewayId?:  string;  // Gateway ID that collected this sensor data
   location:    WeatherStationLocation;
   readings:    Readings;
   status:      Status;
   lastUpdated: Date;
+  metadata?:   {
+    sensorCount: number;
+    readings: WeatherSensorReading[];
+  };
 }
 
 export interface WeatherStationLocation {
@@ -156,52 +383,18 @@ export interface WeatherStationLocation {
 }
 
 export interface Readings {
-  temperature:   number;
-  humidity:      number;
-  pressure:      number;
-  windSpeed:     number;
-  windDirection: number;
-  precipitation: number;
-  cloudCover:    number;
-  visibility:    number;
-  uvIndex:       number;
-  units:         Units;
+  temperature:        number;
+  humidity:           number;
+  weatherConditions?: string;  // Weather conditions from city-simulator (clear, cloudy, rainy, foggy, snowy)
+  units:              Units;
 }
 
 export interface Units {
   temperature:   string;
   humidity:      string;
-  pressure:      string;
-  windSpeed:     string;
-  windDirection: string;
-  precipitation: string;
-  cloudCover:    string;
-  visibility:    string;
 }
 
-export interface EmergencyServices {
-  incidents: EmergencyServicesIncident[];
-  units:     Unit[];
-}
-
-export interface EmergencyServicesIncident {
-  incidentId:      string;
-  type:            string;
-  priority:        string;
-  location:        BuildingLocation;
-  reportedAt:      Date;
-  respondingUnits: string[];
-  status:          string;
-}
-
-export interface Unit {
-  unitId:            string;
-  type:              string;
-  status:            string;
-  location:          Location;
-  destination?:      Location;
-  estimatedArrival?: Date;
-}
+// Note: EmergencyServices and PublicTransport have been replaced by the vehicles array in City
 
 export interface CityMetadata {
   name:        string;
@@ -209,39 +402,4 @@ export interface CityMetadata {
   lastUpdated: Date;
 }
 
-export interface PublicTransport {
-  buses:    Bus[];
-  stations: Station[];
-}
-
-export interface Bus {
-  busId:            string;
-  route:            string;
-  location:         BusLocation;
-  speed:            number;
-  occupancy:        Occupancy;
-  nextStop:         string;
-  estimatedArrival: Date;
-  status:           string;
-}
-
-export interface BusLocation {
-  latitude:    number;
-  longitude:   number;
-  currentStop: string;
-}
-
-export interface Occupancy {
-  current:  number;
-  capacity: number;
-}
-
-export interface Station {
-  stationId:        string;
-  name:             string;
-  type:             string;
-  location:         Location;
-  platforms:        number;
-  currentOccupancy: number;
-  sensors:          Sensor[];
-}
+// Note: PublicTransport (buses, stations) has been replaced by the vehicles array in City

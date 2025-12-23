@@ -6,8 +6,7 @@ export class RedisStateManager {
   private client: Redis;
   private readonly keyPrefix = 'district:';
   private readonly cityGraphKey = 'city:graph';
-  private readonly publicTransportKey = 'city:publicTransport';
-  private readonly emergencyServicesKey = 'city:emergencyServices';
+  private readonly vehiclesKey = 'city:vehicles';
   private readonly cityMetadataKey = 'city:metadata';
   private snapshotManager: any = null;
 
@@ -71,8 +70,7 @@ export class RedisStateManager {
     );
 
     // Initialize empty collections
-    await this.client.set(this.publicTransportKey, JSON.stringify({ buses: [], stations: [] }));
-    await this.client.set(this.emergencyServicesKey, JSON.stringify({ incidents: [], units: [] }));
+    await this.client.set(this.vehiclesKey, JSON.stringify([]));
 
     // Load and initialize city graph from L'Aquila data
     await this.initializeCityGraph();
@@ -95,8 +93,7 @@ export class RedisStateManager {
     }
     
     // Restore city-level data
-    pipeline.set(this.publicTransportKey, JSON.stringify(snapshot.publicTransport));
-    pipeline.set(this.emergencyServicesKey, JSON.stringify(snapshot.emergencyServices));
+    pipeline.set(this.vehiclesKey, JSON.stringify(snapshot.vehicles || []));
     pipeline.set(this.cityGraphKey, JSON.stringify(snapshot.cityGraph));
     
     await pipeline.exec();
@@ -183,11 +180,10 @@ export class RedisStateManager {
    * Get complete city state
    */
   async getCompleteState(): Promise<City> {
-    const [metadata, districts, publicTransport, emergencyServices, cityGraph] = await Promise.all([
+    const [metadata, districts, vehicles, cityGraph] = await Promise.all([
       this.getCityMetadata(),
       this.getAllDistricts(),
-      this.getPublicTransport(),
-      this.getEmergencyServices(),
+      this.getVehicles(),
       this.getCityGraph(),
     ]);
 
@@ -200,8 +196,7 @@ export class RedisStateManager {
         lastUpdated: new Date(),
       },
       districts,
-      publicTransport: publicTransport || { buses: [], stations: [] },
-      emergencyServices: emergencyServices || { incidents: [], units: [] },
+      vehicles: vehicles || [],
       cityGraph: cityGraph || { nodes: [], edges: [] },
     };
   }
@@ -215,35 +210,19 @@ export class RedisStateManager {
   }
 
   /**
-   * Get public transport data
+   * Get vehicles data
    */
-  async getPublicTransport() {
-    const data = await this.client.get(this.publicTransportKey);
-    return data ? JSON.parse(data) : null;
+  async getVehicles() {
+    const data = await this.client.get(this.vehiclesKey);
+    return data ? JSON.parse(data) : [];
   }
 
   /**
-   * Update public transport data
+   * Update vehicles data
    */
-  async updatePublicTransport(data: any): Promise<void> {
-    await this.client.set(this.publicTransportKey, JSON.stringify(data));
-    logger.debug('Updated public transport data');
-  }
-
-  /**
-   * Get emergency services data
-   */
-  async getEmergencyServices() {
-    const data = await this.client.get(this.emergencyServicesKey);
-    return data ? JSON.parse(data) : null;
-  }
-
-  /**
-   * Update emergency services data
-   */
-  async updateEmergencyServices(data: any): Promise<void> {
-    await this.client.set(this.emergencyServicesKey, JSON.stringify(data));
-    logger.debug('Updated emergency services data');
+  async updateVehicles(data: any): Promise<void> {
+    await this.client.set(this.vehiclesKey, JSON.stringify(data));
+    logger.debug('Updated vehicles data');
   }
 
   /**
@@ -281,6 +260,7 @@ export class RedisStateManager {
         sensors: [sensorData],
         buildings: [],
         weatherStations: [],
+        gateways: [],
       };
       await this.updateDistrictState(newDistrict);
       return;

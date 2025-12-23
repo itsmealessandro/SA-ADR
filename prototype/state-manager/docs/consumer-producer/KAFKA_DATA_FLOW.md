@@ -2,9 +2,9 @@
 
 ## Overview
 
-The State Manager uses Kafka for real-time data ingestion and state distribution. It acts as a central hub that:
-- **Consumes** real-time sensor data, traffic updates, and system events from 9 different topics
-- **Processes** and aggregates data into a unified digital twin state
+The State Manager uses Kafka for real-time data ingestion from the city-simulator and state distribution. It acts as a central hub that:
+- **Consumes** real-time sensor data from edge managers via 3 topic types (speed, weather, camera)
+- **Processes** and aggregates data into a unified digital twin state organized by district and edge
 - **Publishes** complete state snapshots and incremental updates for downstream consumers
 
 ---
@@ -12,11 +12,11 @@ The State Manager uses Kafka for real-time data ingestion and state distribution
 ## Kafka Consumer (`consumer.ts`)
 
 ### Purpose
-Ingests real-time data from multiple city systems, updates an in-memory cache, and periodically flushes to Redis for persistence.
+Ingests real-time sensor data from city-simulator edge managers, updates an in-memory cache, and periodically flushes to Redis for persistence.
 
 ### Architecture
 ```
-[City Systems] → [Kafka Topics] → [Consumer] → [In-Memory Cache] → [Redis] → [Snapshots]
+[City-Simulator Edge Managers] → [Kafka Topics] → [Consumer] → [In-Memory Cache] → [Redis] → [Snapshots]
                                        ↓
                                 [Batch Processing]
                                 [Group by District]
@@ -32,269 +32,221 @@ Ingests real-time data from multiple city systems, updates an in-memory cache, a
 
 ---
 
-## Consumed Topics
+## Consumed Topics (City-Simulator)
 
-### 1. `sensors.environmental`
-**Purpose**: Environmental sensor readings (air quality, noise, temperature)
+The state-manager now consumes from 3 topics published by the city-simulator edge managers:
 
-**Data Format**:
-```json
-{
-  "districtId": "district-01",
-  "sensorId": "env-sensor-001",
-  "type": "air_quality" | "noise" | "temperature",
-  "value": 45.2,
-  "unit": "AQI" | "dB" | "°C",
-  "status": "active" | "inactive" | "maintenance",
-  "lastUpdated": "2025-12-08T10:30:00.000Z",
-  "location": {
-    "latitude": 42.35,
-    "longitude": 13.40
-  },
-  "metadata": {
-    "manufacturer": "SensorTech",
-    "model": "AQ-2000"
-  }
-}
-```
+### 1. `city-speed-sensors`
+**Purpose**: Aggregated speed sensor data from edge locations
 
-**Update Logic**: 
-- Updates existing sensor if `sensorId` exists in district
-- Creates new sensor if not found
-- Preserves location and metadata if not provided in update
-
----
-
-### 2. `sensors.traffic`
-**Purpose**: Traffic sensor readings (vehicle count, average speed)
+**Source**: EdgeManager → SpeedSensorSimulator
 
 **Data Format**:
 ```json
 {
-  "districtId": "district-02",
-  "sensorId": "traffic-sensor-005",
-  "type": "traffic_flow",
-  "value": 150,
-  "unit": "vehicles/hour",
-  "status": "active",
-  "lastUpdated": "2025-12-08T10:30:00.000Z",
-  "location": {
-    "latitude": 42.36,
-    "longitude": 13.41
-  },
-  "metadata": {
-    "road": "Via Roma",
-    "direction": "northbound"
-  }
-}
-```
-
-**Update Logic**: Same as environmental sensors
-
----
-
-### 3. `buildings.occupancy`
-**Purpose**: Real-time building occupancy updates
-
-**Data Format**:
-```json
-{
-  "districtId": "district-01",
-  "buildingId": "building-001",
-  "currentOccupancy": 250,
-  "totalCapacity": 500,
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
-}
-```
-
-**Update Logic**:
-- Updates `currentOccupancy` for existing building
-- Calculates `occupancyRate` = currentOccupancy / totalCapacity
-
----
-
-### 4. `buildings.sensors`
-**Purpose**: Building-specific sensor data (HVAC, energy consumption)
-
-**Data Format**:
-```json
-{
-  "districtId": "district-03",
-  "sensorId": "building-sensor-010",
-  "buildingId": "building-003",
-  "type": "energy_consumption",
-  "value": 125.5,
-  "unit": "kWh",
-  "status": "active",
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
-}
-```
-
-**Update Logic**: Same as environmental sensors (stored in district.sensors array)
-
----
-
-### 5. `weather.stations`
-**Purpose**: Weather station readings
-
-**Data Format**:
-```json
-{
-  "districtId": "district-01",
-  "stationId": "weather-station-01",
-  "readings": {
-    "temperature": 18.5,
-    "humidity": 65,
-    "pressure": 1013.25,
-    "windSpeed": 12.5,
-    "windDirection": 180,
-    "precipitation": 0
-  },
-  "status": "active",
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
-}
-```
-
-**Update Logic**:
-- Updates existing weather station readings by `stationId`
-- Replaces entire `readings` object
-- Updates `status` and `lastUpdated`
-
----
-
-### 6. `traffic.graph`
-**Purpose**: Real-time traffic conditions on road network edges
-
-**Data Format**:
-```json
-{
-  "districtId": "DIST-001",
-  "edgeId": "E-00015",
-  "roadSegmentId": "RS-00015",
-  "trafficConditions": {
-    "averageSpeed": 35.5,
-    "congestionLevel": "moderate",
-    "vehicleCount": 45,
-    "travelTime": 8.2,
-    "incidents": []
-  },
-  "timestamp": "2025-12-08T10:30:00.000Z"
-}
-```
-
-**Edge/Road Segment IDs**:
-- All `edgeId` and `roadSegmentId` values correspond to actual edges in the L'Aquila city graph
-- The L'Aquila graph contains 3,459 edges (E-00000 to E-03458) and 4,030 nodes (N-00000 to N-04029)
-- Road Segment IDs follow the format `RS-00000` to `RS-03458` (1:1 mapping with edge IDs)
-- Producer randomly selects from a sampled pool of 500 edges distributed across the full range
-- This sampling provides realistic traffic patterns while avoiding message overhead
-
-**Update Logic**:
-- Finds edge by `edgeId` in city.trafficGraph.edges array
-- Replaces `trafficConditions` object
-- Updates `lastUpdated` timestamp
-- Traffic data applies to the entire city graph (not district-specific)
-
----
-
-### 7. `transport.gps`
-**Purpose**: Real-time GPS coordinates of public transport vehicles
-
-**Data Format**:
-```json
-{
-  "busId": "bus-101",
-  "routeId": "route-A",
-  "currentLocation": {
-    "latitude": 42.35,
-    "longitude": 13.40
-  },
-  "heading": 90,
-  "speed": 25.5,
-  "passengerCount": 35,
-  "status": "in_service",
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
-}
-```
-
-**Update Logic**:
-- Updates existing bus if `busId` exists in publicTransport.buses
-- Creates new bus entry if not found
-- Stored in shared `publicTransport` state (not district-specific)
-
----
-
-### 8. `transport.stations`
-**Purpose**: Public transport station status updates
-
-**Data Format**:
-```json
-{
-  "stationId": "station-05",
-  "name": "Piazza Duomo",
-  "location": {
-    "latitude": 42.35,
-    "longitude": 13.40
-  },
-  "waitingPassengers": 12,
-  "nextArrivals": [
+  "district_id": "district-centro",
+  "edge_id": "edge-centro-1",
+  "sensor_type": "speed",
+  "timestamp": "2025-12-21T10:30:00.000Z",
+  "latitude": 42.3506,
+  "longitude": 13.3992,
+  "speed_kmh": 45.67,
+  "sensor_count": 2,
+  "sensor_readings": [
     {
-      "busId": "bus-101",
-      "routeId": "route-A",
-      "estimatedArrival": "2025-12-08T10:35:00.000Z"
+      "sensor_id": "speed-centro-1a",
+      "speed_kmh": 48.23,
+      "latitude": 42.3507,
+      "longitude": 13.3993
+    },
+    {
+      "sensor_id": "speed-centro-1b",
+      "speed_kmh": 43.11,
+      "latitude": 42.3505,
+      "longitude": 13.3993
     }
   ],
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
+  "sample_count": 10
 }
 ```
 
-**Update Logic**:
-- Updates existing station if `stationId` exists in publicTransport.stations
-- Creates new station entry if not found
-- Stored in shared `publicTransport` state
+**Field Descriptions**:
+- `district_id`: District identifier from city configuration
+- `edge_id`: Edge location identifier (unique per edge)
+- `sensor_type`: Always "speed" for this topic
+- `timestamp`: ISO 8601 timestamp when data was generated
+- `latitude/longitude`: Edge center coordinates
+- `speed_kmh`: Edge-level aggregated speed (temporal + spatial smoothing)
+- `sensor_count`: Number of physical speed sensors at this edge
+- `sensor_readings`: Individual sensor readings before aggregation
+- `sample_count`: Number of samples in moving average window (up to 10)
+
+**Update Logic**: 
+- Creates or updates sensor with ID `speed-{edge_id}`
+- Stores in district's sensors array
+- Includes metadata with individual sensor readings
 
 ---
 
-### 9. `emergency.incidents`
-**Purpose**: Emergency incidents and response unit updates
+### 2. `city-weather-sensors`
+**Purpose**: Aggregated weather data from edge locations
+
+**Source**: EdgeManager → WeatherSensorSimulator
 
 **Data Format**:
 ```json
 {
-  "incidentId": "incident-001",
-  "type": "fire" | "medical" | "accident" | "security",
-  "severity": "critical" | "high" | "medium" | "low",
-  "location": {
-    "latitude": 42.35,
-    "longitude": 13.40
-  },
-  "description": "Fire reported in building",
-  "status": "reported" | "dispatched" | "in_progress" | "resolved",
-  "assignedUnits": ["unit-fire-01", "unit-ambulance-02"],
-  "reportedAt": "2025-12-08T10:30:00.000Z",
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
+  "district_id": "district-centro",
+  "edge_id": "edge-centro-1",
+  "sensor_type": "weather",
+  "timestamp": "2025-12-21T10:30:00.000Z",
+  "latitude": 42.3506,
+  "longitude": 13.3992,
+  "temperature_c": 15.42,
+  "humidity": 67.5,
+  "weather_conditions": "cloudy",
+  "sensor_count": 1,
+  "sensor_readings": [
+    {
+      "sensor_id": "weather-centro-1a",
+      "temperature_c": 15.42,
+      "humidity": 67.5,
+      "latitude": 42.3506,
+      "longitude": 13.3992
+    }
+  ],
+  "sample_count": 8
 }
 ```
 
-**Alternative Format (Response Units)**:
-```json
-{
-  "unitId": "unit-fire-01",
-  "type": "fire_truck" | "ambulance" | "police",
-  "status": "available" | "dispatched" | "on_scene",
-  "currentLocation": {
-    "latitude": 42.35,
-    "longitude": 13.40
-  },
-  "assignedIncident": "incident-001",
-  "lastUpdated": "2025-12-08T10:30:00.000Z"
-}
-```
+**Field Descriptions**:
+- `district_id`: District identifier
+- `edge_id`: Edge location identifier
+- `sensor_type`: Always "weather" for this topic
+- `timestamp`: ISO 8601 timestamp
+- `latitude/longitude`: Edge center coordinates
+- `temperature_c`: Aggregated temperature in Celsius (temporal smoothing applied)
+- `humidity`: Aggregated humidity percentage
+- `weather_conditions`: One of: "clear", "cloudy", "rainy", "foggy", "snowy"
+- `sensor_count`: Number of weather stations at this edge
+- `sensor_readings`: Individual sensor readings
+- `sample_count`: Number of samples in temperature moving average
 
 **Update Logic**:
-- If `incidentId` present: Updates or creates incident in emergencyServices.incidents
-- If `unitId` present: Updates or creates unit in emergencyServices.units
-- Stored in shared `emergencyServices` state
+- Creates or updates weather station with ID `weather-{edge_id}`
+- Stores in district's weatherStations array
+- Includes metadata with individual sensor readings
+
+---
+
+### 3. `city-camera-sensors`
+**Purpose**: Edge analytics from traffic cameras (road condition detection)
+
+**Source**: EdgeManager → CameraSensorSimulator
+
+**Data Format**:
+```json
+{
+  "district_id": "district-centro",
+  "edge_id": "edge-centro-1",
+  "sensor_type": "camera",
+  "timestamp": "2025-12-21T10:30:00.000Z",
+  "latitude": 42.3506,
+  "longitude": 13.3992,
+  "road_condition": "clear",
+  "confidence": 0.92,
+  "vehicle_count": 15,
+  "sensor_count": 3,
+  "sensor_readings": [
+    {
+      "sensor_id": "camera-centro-1a",
+      "road_condition": "clear",
+      "confidence": 0.94,
+      "vehicle_count": 5,
+      "latitude": 42.3508,
+      "longitude": 13.3992
+    },
+    {
+      "sensor_id": "camera-centro-1b",
+      "road_condition": "clear",
+      "confidence": 0.89,
+      "vehicle_count": 6,
+      "latitude": 42.3504,
+      "longitude": 13.3992
+    },
+    {
+      "sensor_id": "camera-centro-1c",
+      "road_condition": "clear",
+      "confidence": 0.93,
+      "vehicle_count": 4,
+      "latitude": 42.3506,
+      "longitude": 13.3994
+    }
+  ]
+}
+```
+
+**Field Descriptions**:
+- `district_id`: District identifier
+- `edge_id`: Edge location identifier
+- `sensor_type`: Always "camera" for this topic
+- `timestamp`: ISO 8601 timestamp
+- `latitude/longitude`: Edge center coordinates
+- `road_condition`: Aggregated condition (most critical across cameras)
+  - Criticality order: accident > flooding > obstacles > congestion > clear
+- `confidence`: Average confidence score (0.75-0.98)
+- `vehicle_count`: Total vehicles detected across all cameras
+- `sensor_count`: Number of cameras at this edge
+- `sensor_readings`: Individual camera detections
+
+**Road Condition Distribution** (simulated):
+- 50% - clear (normal traffic)
+- 25% - congestion (traffic jam)
+- 10% - obstacles (debris/obstacles)
+- 10% - flooding (water on road)
+- 5% - accident
+
+**Update Logic**:
+- Creates or updates sensor with ID `camera-{edge_id}`
+- Stores in district's sensors array
+- Calculates congestion status from road condition:
+  - clear → free_flow
+  - congestion → congested
+  - accident → blocked
+  - obstacles → slow
+  - flooding → blocked
+
+---
+
+## City-Simulator Architecture
+
+The city-simulator is the primary data source for the state-manager. It simulates a complete city infrastructure:
+
+### Components
+```
+[City Config JSON] → [CitySimulator] → [EdgeManagers] → [Kafka Topics]
+                           │                  │
+                    Loads districts      One per edge
+                    and edges           (separate threads)
+                           │                  │
+                    Shared Kafka         Sensor Simulators:
+                    Producer             - SpeedSensorSimulator
+                                        - WeatherSensorSimulator
+                                        - CameraSensorSimulator
+```
+
+### Edge Manager Behavior
+- Each edge runs in a separate thread
+- Rotates through sensor types: speed → weather → camera
+- Sampling interval: 2.5-4.5 seconds (randomized to avoid synchronization)
+- Local buffering for resilience when Kafka is unavailable
+
+### Pre-Aggregation (Edge Computing)
+The city-simulator demonstrates edge computing patterns:
+1. **Multiple physical sensors** at each edge location
+2. **Local aggregation** - averages, smoothing, condition detection
+3. **Only aggregated data** sent to Kafka (reduces bandwidth)
+4. **Individual readings** included in message for transparency
 
 ---
 
@@ -305,6 +257,15 @@ Ingests real-time data from multiple city systems, updates an in-memory cache, a
 KAFKA_BROKERS=localhost:9092           # Kafka broker addresses (comma-separated)
 KAFKA_CLIENT_ID=state-manager          # Client identifier
 KAFKA_GROUP_ID=state-manager-group     # Consumer group ID
+```
+
+### Subscribed Topics
+```typescript
+const topics = [
+  'city-speed-sensors',    // Speed sensor data from edge managers
+  'city-weather-sensors',  // Weather sensor data from edge managers
+  'city-camera-sensors',   // Camera analytics data from edge managers
+];
 ```
 
 ### Performance Settings
@@ -338,164 +299,141 @@ Periodically publishes the complete city digital twin state and incremental upda
 
 **Publish Frequency**: Every 60 seconds (configurable via `FULL_STATE_PUBLISH_INTERVAL_MS`)
 
-**Message Format**:
+**Message Format** (with city-simulator data):
 ```json
 {
   "cityId": "laquila-dt-001",
   "name": "L'Aquila Digital Twin",
-  "timestamp": "2025-12-08T10:30:00.000Z",
+  "timestamp": "2025-12-21T10:30:00.000Z",
   "districts": [
     {
-      "districtId": "district-01",
+      "districtId": "district-centro",
       "name": "Centro Storico",
       "location": {
-        "centerLatitude": 42.3498,
-        "centerLongitude": 13.3995,
+        "centerLatitude": 42.3506,
+        "centerLongitude": 13.3992,
         "boundaries": {
-          "north": 42.36,
-          "south": 42.34,
-          "east": 13.42,
-          "west": 13.38
+          "north": 0,
+          "south": 0,
+          "east": 0,
+          "west": 0
         }
       },
       "sensors": [
         {
-          "sensorId": "env-sensor-001",
-          "type": "air_quality",
-          "value": 45.2,
-          "unit": "AQI",
+          "sensorId": "speed-edge-centro-1",
+          "type": "speed",
+          "edgeId": "edge-centro-1",
+          "value": 45.67,
+          "unit": "km/h",
           "status": "active",
-          "lastUpdated": "2025-12-08T10:29:55.000Z",
+          "lastUpdated": "2025-12-21T10:29:55.000Z",
           "location": {
-            "latitude": 42.35,
-            "longitude": 13.40
+            "latitude": 42.3506,
+            "longitude": 13.3992
           },
           "metadata": {
-            "manufacturer": "SensorTech"
+            "avgSpeed": 45.67,
+            "sensorCount": 2,
+            "readings": [
+              {
+                "sensor_id": "speed-centro-1a",
+                "speed_kmh": 48.23,
+                "latitude": 42.3507,
+                "longitude": 13.3993
+              }
+            ]
+          }
+        },
+        {
+          "sensorId": "camera-edge-centro-1",
+          "type": "camera",
+          "edgeId": "edge-centro-1",
+          "value": 15,
+          "unit": "vehicles",
+          "status": "active",
+          "lastUpdated": "2025-12-21T10:29:58.000Z",
+          "location": {
+            "latitude": 42.3506,
+            "longitude": 13.3992
+          },
+          "metadata": {
+            "roadCondition": "clear",
+            "confidence": 0.92,
+            "vehicleCount": 15,
+            "sensorCount": 3,
+            "congestionStatus": "free_flow",
+            "readings": [
+              {
+                "sensor_id": "camera-centro-1a",
+                "road_condition": "clear",
+                "confidence": 0.94,
+                "vehicle_count": 5
+              }
+            ]
           }
         }
       ],
-      "buildings": [
-        {
-          "buildingId": "building-001",
-          "name": "Palazzo Comunale",
-          "type": "government",
-          "location": {
-            "latitude": 42.35,
-            "longitude": 13.40
-          },
-          "currentOccupancy": 250,
-          "totalCapacity": 500,
-          "occupancyRate": 0.5,
-          "sensors": []
-        }
-      ],
+      "buildings": [],
       "weatherStations": [
         {
-          "stationId": "weather-station-01",
+          "stationId": "weather-edge-centro-1",
+          "name": "Weather Station edge-centro-1",
+          "edgeId": "edge-centro-1",
           "location": {
-            "latitude": 42.35,
-            "longitude": 13.40
+            "latitude": 42.3506,
+            "longitude": 13.3992,
+            "elevation": 0
           },
           "readings": {
-            "temperature": 18.5,
-            "humidity": 65,
+            "temperature": 15.42,
+            "humidity": 67.5,
+            "weatherConditions": "cloudy",
             "pressure": 1013.25,
-            "windSpeed": 12.5,
-            "windDirection": 180,
-            "precipitation": 0
+            "windSpeed": 0,
+            "windDirection": 0,
+            "precipitation": 0,
+            "cloudCover": 0,
+            "visibility": 10000,
+            "uvIndex": 0,
+            "units": {
+              "temperature": "°C",
+              "humidity": "%",
+              "pressure": "hPa",
+              "windSpeed": "m/s",
+              "windDirection": "°",
+              "precipitation": "mm",
+              "cloudCover": "%",
+              "visibility": "m"
+            }
           },
           "status": "active",
-          "lastUpdated": "2025-12-08T10:29:50.000Z"
+          "lastUpdated": "2025-12-21T10:29:50.000Z",
+          "metadata": {
+            "sensorCount": 1,
+            "readings": [
+              {
+                "sensor_id": "weather-centro-1a",
+                "temperature_c": 15.42,
+                "humidity": 67.5
+              }
+            ]
+          }
         }
-      ],
-      "cityGraph": {
-        "nodes": [
-          {
-            "nodeId": "N-00001",
-            "type": "intersection",
-            "location": {
-              "latitude": 42.35,
-              "longitude": 13.40
-            }
-          }
-        ],
-        "edges": [
-          {
-            "edgeId": "E-00015",
-            "roadSegmentId": "RS-00015",
-            "fromNode": "N-00001",
-            "toNode": "N-00002",
-            "name": "Via Roma",
-            "class": "primary",
-            "length": 150.5,
-            "speedLimit": 50,
-            "lanes": 2,
-            "trafficConditions": {
-              "averageSpeed": 35.5,
-              "congestionLevel": "moderate",
-              "vehicleCount": 45,
-              "travelTime": 8.2,
-              "incidents": []
-            },
-            "lastUpdated": "2025-12-08T10:29:58.000Z",
-            "geometry": {
-              "type": "LineString",
-              "coordinates": [
-                [13.40, 42.35],
-                [13.401, 42.351]
-              ]
-            }
-          }
-        ]
-      }
+      ]
     }
   ],
   "publicTransport": {
-    "buses": [
-      {
-        "busId": "bus-101",
-        "routeId": "route-A",
-        "currentLocation": {
-          "latitude": 42.35,
-          "longitude": 13.40
-        },
-        "heading": 90,
-        "speed": 25.5,
-        "passengerCount": 35,
-        "status": "in_service",
-        "lastUpdated": "2025-12-08T10:29:55.000Z"
-      }
-    ],
-    "stations": [
-      {
-        "stationId": "station-05",
-        "name": "Piazza Duomo",
-        "location": {
-          "latitude": 42.35,
-          "longitude": 13.40
-        },
-        "waitingPassengers": 12,
-        "nextArrivals": []
-      }
-    ]
+    "buses": [],
+    "stations": []
   },
   "emergencyServices": {
-    "incidents": [
-      {
-        "incidentId": "incident-001",
-        "type": "fire",
-        "severity": "critical",
-        "location": {
-          "latitude": 42.35,
-          "longitude": 13.40
-        },
-        "status": "in_progress",
-        "assignedUnits": ["unit-fire-01"],
-        "reportedAt": "2025-12-08T10:25:00.000Z"
-      }
-    ],
+    "incidents": [],
     "units": []
+  },
+  "cityGraph": {
+    "nodes": [],
+    "edges": []
   }
 }
 ```

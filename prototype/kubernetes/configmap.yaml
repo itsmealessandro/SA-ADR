@@ -11,6 +11,13 @@ data:
   REDIS_HOST: "redis"
   REDIS_PORT: "6379"
 
+  # Service Ports (for init container dependency checks)
+  KAFKA_PORT: "9092"
+  MONGODB_PORT: "27017"
+  INFLUXDB_PORT: "8086"
+  STATE_MANAGER_PORT: "3000"
+  NOTIFICATION_MANAGER_PORT: "3002"
+
   # MongoDB
   MONGODB_URI_STATE: "mongodb://mongodb-state:27017" # URI components might need to be constructed in app or passed as full URI
   MONGODB_URI_NOTIFICATIONS: "mongodb://mongodb-notifications:27017"
@@ -26,9 +33,7 @@ data:
   KAFKA_CLIENT_ID_PRODUCER: "data-producer"
 
   # Kafka Topics
-  KAFKA_TOPIC_SPEED: "city-speed-sensors"
-  KAFKA_TOPIC_WEATHER: "city-weather-sensors"
-  KAFKA_TOPIC_CAMERA: "city-camera-sensors"
+  KAFKA_TOPIC_GATEWAY: "city-gateway-data"
   KAFKA_TOPIC_VEHICLES: "vehicles-telemetry"
   KAFKA_TOPIC_BUILDINGS: "buildings-monitoring"
 

@@ -9,10 +9,10 @@
             "vehicle_id": "vehicle-emergency-001",
             "type": "ambulance",
             "name": "Ambulanza 118 - Alpha",
-            "description": "Primary emergency ambulance for Centro Storico",
+            "description": "Primary emergency ambulance",
             "gps_position": {
-                "latitude": 42.3506,
-                "longitude": 13.3992,
+                "latitude": 42.366152,
+                "longitude": 13.353024,
                 "altitude_m": 721
             },
             "movement": {
@@ -57,40 +57,94 @@
                 "estimated_time_minutes": 3,
                 "waypoints": [
                     {
-                        "latitude": 42.3506,
-                        "longitude": 13.3992,
-                        "name": "Current Position - Piazza Duomo",
+                        "latitude": 42.366152,
+                        "longitude": 13.353024,
+                        "name": "Current Position - Ospedale San Salvatore",
                         "sequence": 0
                     },
                     {
-                        "latitude": 42.3498,
-                        "longitude": 13.3995,
+                        "latitude": 42.366822,
+                        "longitude": 13.354829,
                         "name": "Piazza Duomo & Via Roma",
                         "sequence": 1
                     },
                     {
-                        "latitude": 42.3490,
-                        "longitude": 13.4010,
-                        "name": "Via Giuseppe Garibaldi",
+                        "latitude": 42.368588,
+                        "longitude": 13.357060,
+                        "name": "Via Lorenzo natali",
                         "sequence": 2
                     },
                     {
-                        "latitude": 42.3465,
-                        "longitude": 13.4025,
-                        "name": "Via Pescara",
+                        "latitude": 42.370084,
+                        "longitude": 13.356272,
+                        "name": "S.S. 80",
                         "sequence": 3
                     },
                     {
-                        "latitude": 42.3455,
-                        "longitude": 13.3985,
-                        "name": "Via Antica Arischia",
+                        "latitude": 42.373312,
+                        "longitude": 13.350642,
+                        "name": "Via Enrico Fermi",
                         "sequence": 4
                     },
                     {
-                        "latitude": 42.3425,
-                        "longitude": 13.3989,
-                        "name": "Destination - Basilica di Collemaggio",
+                        "latitude": 42.376558,
+                        "longitude": 13.351827,
+                        "name": "Via Enrico Fermi",
                         "sequence": 5
+                    },
+                    {
+                        "latitude": 42.377788,
+                        "longitude": 13.350634,
+                        "name": "Via Antica Arischia",
+                        "sequence": 6
+                    },
+                    {
+                        "latitude": 42.377116,
+                        "longitude": 13.349681,
+                        "name": "Via Antica Arischia - Ater",
+                        "sequence": 7
+                    },
+                    {
+                        "latitude": 42.376558,
+                        "longitude": 13.351827,
+                        "name": "Via Enrico Fermi",
+                        "sequence": 8
+                    },
+                    {
+                        "latitude": 42.378414,
+                        "longitude": 13.349598,
+                        "name": "Via Antica Arischia - Ater",
+                        "sequence": 9
+                    },
+                    {
+                        "latitude": 42.375476,
+                        "longitude": 13.351441,
+                        "name": "Via Enrico Fermi",
+                        "sequence": 10
+                    },
+                    {
+                        "latitude": 42.372607,
+                        "longitude": 13.348794,
+                        "name": "Via Paolo Borsellino",
+                        "sequence": 11
+                    },
+                    {
+                        "latitude": 42.367615,
+                        "longitude": 13.347061,
+                        "name": "Via Vetoio",
+                        "sequence": 12
+                    },
+                    {
+                        "latitude": 42.367222,
+                        "longitude": 13.350982,
+                        "name": "Piazzale Luigi Petrini",
+                        "sequence": 13
+                    },
+                    {
+                        "latitude": 42.366382,
+                        "longitude": 13.352404,
+                        "name": "Piazzale Pronto Soccorso",
+                        "sequence": 14
                     }
                 ]
             },
@@ -106,8 +160,8 @@
             "name": "Autopompa VVF - Bravo",
             "description": "Fire Brigade main pumper truck",
             "gps_position": {
-                "latitude": 42.3675,
-                "longitude": 13.3512,
+                "latitude": 42.3531478,
+                "longitude": 13.3963767,
                 "altitude_m": 698
             },
             "movement": {
@@ -137,29 +191,29 @@
             "route_path": {
                 "description": "Standby patrol route - Quartiere Nord",
                 "total_distance_m": 1200,
-                "estimated_time_minutes": 5,
+                "estimated_time_minutes": 3,
                 "waypoints": [
                     {
-                        "latitude": 42.3675,
-                        "longitude": 13.3512,
+                        "latitude": 42.3531478,
+                        "longitude": 13.3963767,
                         "name": "Current Position - Fire Station",
                         "sequence": 0
                     },
                     {
-                        "latitude": 42.3540,
-                        "longitude": 13.4000,
+                        "latitude": 42.3551121,
+                        "longitude": 13.3930266,
                         "name": "Piazza Battaglione Alpini",
                         "sequence": 1
                     },
                     {
-                        "latitude": 42.3530,
-                        "longitude": 13.4015,
+                        "latitude": 42.3549843,
+                        "longitude": 13.3922763,
                         "name": "Via Strinella",
                         "sequence": 2
                     },
                     {
-                        "latitude": 42.3520,
-                        "longitude": 13.4005,
+                        "latitude": 42.3545496,
+                        "longitude": 13.3917186,
                         "name": "Viale Gran Sasso",
                         "sequence": 3
                     },
@@ -170,10 +224,22 @@
                         "sequence": 4
                     },
                     {
-                        "latitude": 42.3675,
-                        "longitude": 13.3512,
+                        "latitude": 42.3544058,
+                        "longitude": 13.3921006,
                         "name": "Return - Fire Station",
                         "sequence": 5
+                    },
+                    {
+                        "latitude": 42.354534,
+                        "longitude": 13.3923184,
+                        "name": "Piazza del Palazzo",
+                        "sequence": 6
+                    },
+                    {
+                        "latitude": 42.355063,
+                        "longitude": 13.3929337,
+                        "name": "Via S.Nicola d'Anza",
+                        "sequence": 7
                     }
                 ]
             },
@@ -230,33 +296,57 @@
                 "route_priority": "high"
             },
             "route_path": {
-                "description": "Police patrol to incident site",
-                "total_distance_m": 650,
-                "estimated_time_minutes": 2,
+                "description": "Standby patrol route - Quartiere Nord",
+                "total_distance_m": 1200,
+                "estimated_time_minutes": 3,
                 "waypoints": [
                     {
-                        "latitude": 42.3432,
-                        "longitude": 13.3968,
-                        "name": "Current Position - Patrol Area",
+                        "latitude": 42.3531478,
+                        "longitude": 13.3963767,
+                        "name": "Current Position - Fire Station",
                         "sequence": 0
                     },
                     {
-                        "latitude": 42.3425,
-                        "longitude": 13.3972,
-                        "name": "Via Collemaggio Junction",
+                        "latitude": 42.3551121,
+                        "longitude": 13.3930266,
+                        "name": "Piazza Battaglione Alpini",
                         "sequence": 1
                     },
                     {
-                        "latitude": 42.3420,
-                        "longitude": 13.3978,
-                        "name": "Approaching Incident",
+                        "latitude": 42.3549843,
+                        "longitude": 13.3922763,
+                        "name": "Via Strinella",
                         "sequence": 2
                     },
                     {
-                        "latitude": 42.3418,
-                        "longitude": 13.3975,
-                        "name": "Destination - Incident Site",
+                        "latitude": 42.3545496,
+                        "longitude": 13.3917186,
+                        "name": "Viale Gran Sasso",
                         "sequence": 3
+                    },
+                    {
+                        "latitude": 42.3512,
+                        "longitude": 13.3978,
+                        "name": "Piazza del Palazzo",
+                        "sequence": 4
+                    },
+                    {
+                        "latitude": 42.3544058,
+                        "longitude": 13.3921006,
+                        "name": "Return - Fire Station",
+                        "sequence": 5
+                    },
+                    {
+                        "latitude": 42.354534,
+                        "longitude": 13.3923184,
+                        "name": "Piazza del Palazzo",
+                        "sequence": 6
+                    },
+                    {
+                        "latitude": 42.355063,
+                        "longitude": 13.3929337,
+                        "name": "Via S.Nicola d'Anza",
+                        "sequence": 7
                     }
                 ]
             },
@@ -320,63 +410,57 @@
                 "route_priority": "normal"
             },
             "route_path": {
-                "description": "Bus Line 3 - Full route",
-                "total_distance_m": 3500,
-                "estimated_time_minutes": 18,
+                "description": "Standby patrol route - Quartiere Nord",
+                "total_distance_m": 1200,
+                "estimated_time_minutes": 3,
                 "waypoints": [
                     {
-                        "latitude": 42.3512,
-                        "longitude": 13.4008,
-                        "name": "Current Position - Ospedale Area",
+                        "latitude": 42.3531478,
+                        "longitude": 13.3963767,
+                        "name": "Current Position - Fire Station",
                         "sequence": 0
                     },
                     {
-                        "latitude": 42.3520,
-                        "longitude": 13.4005,
-                        "name": "Stop 1 - Viale Gran Sasso",
+                        "latitude": 42.3551121,
+                        "longitude": 13.3930266,
+                        "name": "Piazza Battaglione Alpini",
                         "sequence": 1
                     },
                     {
-                        "latitude": 42.3530,
-                        "longitude": 13.4015,
-                        "name": "Stop 2 - Via Strinella",
+                        "latitude": 42.3549843,
+                        "longitude": 13.3922763,
+                        "name": "Via Strinella",
                         "sequence": 2
                     },
                     {
-                        "latitude": 42.3540,
-                        "longitude": 13.4000,
-                        "name": "Stop 3 - Piazza Battaglione Alpini",
+                        "latitude": 42.3545496,
+                        "longitude": 13.3917186,
+                        "name": "Viale Gran Sasso",
                         "sequence": 3
                     },
                     {
-                        "latitude": 42.3550,
-                        "longitude": 13.3990,
-                        "name": "Stop 4 - Via Giovanni XXIII",
+                        "latitude": 42.3512,
+                        "longitude": 13.3978,
+                        "name": "Piazza del Palazzo",
                         "sequence": 4
                     },
                     {
-                        "latitude": 42.3525,
-                        "longitude": 13.3965,
-                        "name": "Stop 5 - Via Caldora",
+                        "latitude": 42.3544058,
+                        "longitude": 13.3921006,
+                        "name": "Return - Fire Station",
                         "sequence": 5
                     },
                     {
-                        "latitude": 42.3506,
-                        "longitude": 13.3992,
-                        "name": "Stop 6 - Piazza Duomo",
+                        "latitude": 42.354534,
+                        "longitude": 13.3923184,
+                        "name": "Piazza del Palazzo",
                         "sequence": 6
                     },
                     {
-                        "latitude": 42.3675,
-                        "longitude": 13.3512,
-                        "name": "Stop 7 - University Campus",
+                        "latitude": 42.355063,
+                        "longitude": 13.3929337,
+                        "name": "Via S.Nicola d'Anza",
                         "sequence": 7
-                    },
-                    {
-                        "latitude": 42.3695,
-                        "longitude": 13.3548,
-                        "name": "Destination - Terminus",
-                        "sequence": 8
                     }
                 ]
             },
@@ -433,51 +517,57 @@
                 "route_priority": "normal"
             },
             "route_path": {
-                "description": "Delivery route - Multiple stops in centro storico",
-                "total_distance_m": 1400,
-                "estimated_time_minutes": 12,
+                "description": "Standby patrol route - Quartiere Nord",
+                "total_distance_m": 1200,
+                "estimated_time_minutes": 3,
                 "waypoints": [
                     {
-                        "latitude": 42.3418,
-                        "longitude": 13.3975,
-                        "name": "Current Position - Via Collemaggio",
+                        "latitude": 42.3531478,
+                        "longitude": 13.3963767,
+                        "name": "Current Position - Fire Station",
                         "sequence": 0
                     },
                     {
-                        "latitude": 42.3422,
-                        "longitude": 13.3982,
-                        "name": "Delivery Stop 1",
+                        "latitude": 42.3551121,
+                        "longitude": 13.3930266,
+                        "name": "Piazza Battaglione Alpini",
                         "sequence": 1
                     },
                     {
-                        "latitude": 42.3425,
-                        "longitude": 13.3989,
-                        "name": "Delivery Stop 2 - Commercial Zone",
+                        "latitude": 42.3549843,
+                        "longitude": 13.3922763,
+                        "name": "Via Strinella",
                         "sequence": 2
                     },
                     {
-                        "latitude": 42.3445,
-                        "longitude": 13.3998,
-                        "name": "Delivery Stop 3",
+                        "latitude": 42.3545496,
+                        "longitude": 13.3917186,
+                        "name": "Viale Gran Sasso",
                         "sequence": 3
                     },
                     {
-                        "latitude": 42.3485,
-                        "longitude": 13.3970,
-                        "name": "Delivery Stop 4 - Via Croce Rossa",
+                        "latitude": 42.3512,
+                        "longitude": 13.3978,
+                        "name": "Piazza del Palazzo",
                         "sequence": 4
                     },
                     {
-                        "latitude": 42.3498,
-                        "longitude": 13.3995,
-                        "name": "Delivery Stop 5 - Piazza Duomo",
+                        "latitude": 42.3544058,
+                        "longitude": 13.3921006,
+                        "name": "Return - Fire Station",
                         "sequence": 5
                     },
                     {
-                        "latitude": 42.3512,
-                        "longitude": 13.4008,
-                        "name": "Final Destination - Corso Vittorio Emanuele",
+                        "latitude": 42.354534,
+                        "longitude": 13.3923184,
+                        "name": "Piazza del Palazzo",
                         "sequence": 6
+                    },
+                    {
+                        "latitude": 42.355063,
+                        "longitude": 13.3929337,
+                        "name": "Via S.Nicola d'Anza",
+                        "sequence": 7
                     }
                 ]
             },

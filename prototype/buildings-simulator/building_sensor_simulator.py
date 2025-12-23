@@ -11,7 +11,7 @@ Simulates all sensor data for a single building including:
 
 import random
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class BuildingSensorSimulator:
@@ -31,6 +31,7 @@ class BuildingSensorSimulator:
         """
         # IDENTIFICAZIONE EDIFICIO
         # building_id: ID univoco dell'edificio (es. "building-hospital-001")
+        self.district_id = building_config['district_id']
         self.building_id = building_config['building_id']
         
         # building_name: Nome descrittivo (es. "Ospedale San Salvatore")
@@ -254,6 +255,7 @@ class BuildingSensorSimulator:
         # Costruisce il payload completo dei dati
         data = {
             # === IDENTIFICAZIONE EDIFICIO ===
+            'district_id': self.district_id,  # ID del distretto/area
             'building_id': self.building_id,  # ID univoco
             'building_name': self.building_name,  # Nome descrittivo
             'building_type': self.building_type,  # Tipologia edificio

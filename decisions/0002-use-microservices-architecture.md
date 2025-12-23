@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2025-11-17
 decision-makers: Agostino, Alessandro, Bryant, Graziano
 consulted: Agostino, Alessandro, Bryant, Graziano

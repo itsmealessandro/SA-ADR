@@ -25,6 +25,25 @@ spec:
       labels:
         app: dashboard
     spec:
+      initContainers:
+        - name: wait-for-state-manager
+          image: busybox:1.28
+          env:
+            - name: STATE_MANAGER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: STATE_MANAGER_PORT
+          command: ['sh', '-c', 'until nc -z state-manager $STATE_MANAGER_PORT; do echo waiting for state-manager; sleep 2; done;']
+        - name: wait-for-notification-manager
+          image: busybox:1.28
+          env:
+            - name: NOTIFICATION_MANAGER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: NOTIFICATION_MANAGER_PORT
+          command: ['sh', '-c', 'until nc -z notification-manager $NOTIFICATION_MANAGER_PORT; do echo waiting for notification-manager; sleep 2; done;']
       containers:
         - name: dashboard
           image: digital-twin/dashboard:latest

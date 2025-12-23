@@ -8,6 +8,23 @@
         },
         "description": "Emergency Management System for L'Aquila city"
     },
+    "graph": {
+        "total_edges": 700,
+        "edge_id_format": "E-{:05d}",
+        "edge_id_range": {
+            "start": 2000,
+            "end": 2699
+        }
+    },
+    "simulation": {
+        "sampling_interval_seconds": 3,
+        "gateways_per_instance": 5,
+        "sensors_per_edge": {
+            "speed": 1,
+            "camera": 1
+        },
+        "total_weather_stations": 2
+    },
     "managed_resources": {
         "monitor_interval_seconds": 3,
         "analysis_rules": {
@@ -26,331 +43,98 @@
             "district_id": "district-centro",
             "name": "Centro Storico",
             "description": "Historic city center with high pedestrian traffic",
-            "edges": [
-                {
-                    "gateway_id": "gateway-centro-1",
-                    "edge_id": "edge-centro-1",
-                    "name": "Piazza Duomo Area",
-                    "location": {
-                        "latitude": 42.3506,
-                        "longitude": 13.3992
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-centro-1a",
-                                "location": "Via Roma entrance",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0001
-                            },
-                            {
-                                "sensor_id": "speed-centro-1b",
-                                "location": "Via Roma exit",
-                                "offset_lat": -0.0001,
-                                "offset_lon": 0.0001
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-centro-1a",
-                                "location": "Piazza Duomo",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-centro-1a",
-                                "location": "North intersection",
-                                "offset_lat": 0.0002,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "camera-centro-1b",
-                                "location": "South intersection",
-                                "offset_lat": -0.0002,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "camera-centro-1c",
-                                "location": "East intersection",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0002
-                            }
-                        ]
-                    }
-                },
-                {
-                    "gateway_id": "gateway-centro-2",
-                    "edge_id": "edge-centro-2",
-                    "name": "Corso Vittorio Emanuele",
-                    "location": {
-                        "latitude": 42.3512,
-                        "longitude": 13.4008
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-centro-2a",
-                                "location": "Main corso",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0001
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-centro-2a",
-                                "location": "Corso center",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-centro-2a",
-                                "location": "Corso entrance",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "camera-centro-2b",
-                                "location": "Corso exit",
-                                "offset_lat": -0.0001,
-                                "offset_lon": 0.0
-                            }
-                        ]
-                    }
-                }
-            ]
+            "edge_range": {
+                "start": 2000,
+                "end": 2099
+            },
+            "center": {
+                "latitude": 42.3506,
+                "longitude": 13.3992
+            }
         },
         {
             "district_id": "district-collemaggio",
             "name": "Collemaggio",
             "description": "Southern district with Basilica di Collemaggio",
-            "edges": [
-                {
-                    "gateway_id": "gateway-collemaggio-1",
-                    "edge_id": "edge-collemaggio-1",
-                    "name": "Basilica Area",
-                    "location": {
-                        "latitude": 42.3425,
-                        "longitude": 13.3989
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-collemaggio-1a",
-                                "location": "Main road",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0001
-                            },
-                            {
-                                "sensor_id": "speed-collemaggio-1b",
-                                "location": "Secondary road",
-                                "offset_lat": 0.0001,
-                                "offset_lon": -0.0001
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-collemaggio-1a",
-                                "location": "Basilica square",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-collemaggio-1a",
-                                "location": "Basilica entrance",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0001
-                            },
-                            {
-                                "sensor_id": "camera-collemaggio-1b",
-                                "location": "Parking area",
-                                "offset_lat": -0.0001,
-                                "offset_lon": -0.0001
-                            }
-                        ]
-                    }
-                },
-                {
-                    "gateway_id": "gateway-collemaggio-2",
-                    "edge_id": "edge-collemaggio-2",
-                    "name": "Via Collemaggio",
-                    "location": {
-                        "latitude": 42.3418,
-                        "longitude": 13.3975
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-collemaggio-2a",
-                                "location": "Via entrance",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-collemaggio-2a",
-                                "location": "Via center",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-collemaggio-2a",
-                                "location": "Street monitor",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0001
-                            }
-                        ]
-                    }
-                },
-                {
-                    "gateway_id": "gateway-collemaggio-3",
-                    "edge_id": "edge-collemaggio-3",
-                    "name": "Porta Bazzano",
-                    "location": {
-                        "latitude": 42.3432,
-                        "longitude": 13.3968
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-collemaggio-3a",
-                                "location": "Gate area",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-collemaggio-3a",
-                                "location": "Gate monitor",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ]
-                    }
-                }
-            ]
+            "edge_range": {
+                "start": 2100,
+                "end": 2199
+            },
+            "center": {
+                "latitude": 42.3425,
+                "longitude": 13.3989
+            }
+        },
+        {
+            "district_id": "district-fontecchio",
+            "name": "Fontecchio",
+            "description": "Eastern residential district",
+            "edge_range": {
+                "start": 2200,
+                "end": 2299
+            },
+            "center": {
+                "latitude": 42.3489,
+                "longitude": 13.4125
+            }
+        },
+        {
+            "district_id": "district-coppito",
+            "name": "Coppito",
+            "description": "Western district with university and hospital",
+            "edge_range": {
+                "start": 2300,
+                "end": 2399
+            },
+            "center": {
+                "latitude": 42.3678,
+                "longitude": 13.3512
+            }
         },
         {
             "district_id": "district-pettino",
             "name": "Pettino",
-            "description": "Northern residential and university district",
-            "edges": [
-                {
-                    "gateway_id": "gateway-pettino-1",
-                    "edge_id": "edge-pettino-1",
-                    "name": "University Area",
-                    "location": {
-                        "latitude": 42.3675,
-                        "longitude": 13.3512
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-pettino-1a",
-                                "location": "University entrance",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "speed-pettino-1b",
-                                "location": "Student housing road",
-                                "offset_lat": -0.0001,
-                                "offset_lon": 0.0001
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-pettino-1a",
-                                "location": "University campus",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "weather-pettino-1b",
-                                "location": "Residential area",
-                                "offset_lat": 0.0002,
-                                "offset_lon": 0.0002
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-pettino-1a",
-                                "location": "Main entrance",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0001
-                            },
-                            {
-                                "sensor_id": "camera-pettino-1b",
-                                "location": "Parking lot",
-                                "offset_lat": 0.0001,
-                                "offset_lon": -0.0001
-                            }
-                        ]
-                    }
-                },
-                {
-                    "gateway_id": "gateway-pettino-2",
-                    "edge_id": "edge-pettino-2",
-                    "name": "Via L'Aquila",
-                    "location": {
-                        "latitude": 42.3695,
-                        "longitude": 13.3548
-                    },
-                    "sensors": {
-                        "speed": [
-                            {
-                                "sensor_id": "speed-pettino-2a",
-                                "location": "Main road north",
-                                "offset_lat": 0.0001,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "speed-pettino-2b",
-                                "location": "Main road south",
-                                "offset_lat": -0.0001,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "weather": [
-                            {
-                                "sensor_id": "weather-pettino-2a",
-                                "location": "Road center",
-                                "offset_lat": 0.0,
-                                "offset_lon": 0.0
-                            }
-                        ],
-                        "camera": [
-                            {
-                                "sensor_id": "camera-pettino-2a",
-                                "location": "North junction",
-                                "offset_lat": 0.0002,
-                                "offset_lon": 0.0
-                            },
-                            {
-                                "sensor_id": "camera-pettino-2b",
-                                "location": "South junction",
-                                "offset_lat": -0.0002,
-                                "offset_lon": 0.0
-                            }
-                        ]
-                    }
-                }
-            ]
+            "description": "Northern commercial district",
+            "edge_range": {
+                "start": 2400,
+                "end": 2499
+            },
+            "center": {
+                "latitude": 42.3745,
+                "longitude": 13.3789
+            }
+        },
+        {
+            "district_id": "district-roio",
+            "name": "Roio",
+            "description": "Southwestern mountain district",
+            "edge_range": {
+                "start": 2500,
+                "end": 2599
+            },
+            "center": {
+                "latitude": 42.3298,
+                "longitude": 13.3645
+            }
+        },
+        {
+            "district_id": "district-paganica",
+            "name": "Paganica",
+            "description": "Eastern suburban district",
+            "edge_range": {
+                "start": 2600,
+                "end": 2699
+            },
+            "center": {
+                "latitude": 42.3567,
+                "longitude": 13.4589
+            }
         }
     ],
     "metadata": {
-        "version": "3.0",
+        "version": "4.0",
         "created": "2025-12-03",
-        "updated": "2025-12-03",
-        "notes": "MAPE-K architecture configuration for L'Aquila Emergency Management System. Multiple edges per district for scalable simulation. Total: 3 districts, 7 edges, 40+ sensors."
+        "updated": "2025-12-21",
+        "notes": "Dynamic sensor generation based on city graph edges (E-00000 to E-03458). Districts define edge ranges. Sensors and gateway IDs are generated at runtime. Supports horizontal scaling with INSTANCE_ID and TOTAL_INSTANCES env vars."
     }
 }

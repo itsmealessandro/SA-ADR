@@ -21,7 +21,35 @@ interface NotificationStore {
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
   // Initial state
-  notifications: [],
+  notifications: [
+    // {
+    //   _id: '1',
+    //   message: "High pollution levels detected in District Roio.",
+    //   timestamp: new Date().toISOString(),
+    //   read: false,
+    //   severity: "warning",
+    //   source: "Risk Detector",
+    //   title: "Pollution Alert",
+    // },
+    // {
+    //   _id: '2',
+    //   source: "Recommendation Manager",
+    //   title: "Energy Saving Tip",
+    //   message: "Consider reducing street lighting in low-traffic areas to save energy.",
+    //   timestamp: new Date().toISOString(),
+    //   read: true,
+    //   severity: "info",
+    // },
+    // {
+    //   _id: '3',
+    //   source: "Risk Detector",
+    //   severity: "critical",
+    //   title: "Severe Weather Warning",
+    //   message: "A severe thunderstorm is approaching District Centro. Take necessary precautions.",
+    //   timestamp: new Date().toISOString(),
+    //   read: false,
+    // }
+  ],
   unreadCount: 0,
   lastPollTimestamp: null,
   isLoading: false,

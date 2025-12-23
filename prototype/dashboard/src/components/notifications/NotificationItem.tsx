@@ -1,37 +1,38 @@
 import { AlertCircle, AlertTriangle, ChevronDown, ChevronUp, Info, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import type { Notification, NotificationSeverity } from '../../types';
+import type { Notification, NotificationSeverity as NotificationSeverityType } from '../../types';
+import { NotificationSeverity } from '../../types';
 
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead?: (id: string) => void;
 }
 
-const severityConfig: Record<NotificationSeverity, { 
+const severityConfig: Record<NotificationSeverityType, { 
   icon: React.ComponentType<{ className?: string }>;
   bgColor: string;
   iconColor: string;
   borderColor: string;
 }> = {
-  info: {
+  [NotificationSeverity.INFO]: {
     icon: Info,
     bgColor: 'bg-blue-50',
     iconColor: 'text-blue-600',
     borderColor: 'border-blue-200',
   },
-  warning: {
+  [NotificationSeverity.WARNING]: {
     icon: AlertTriangle,
     bgColor: 'bg-yellow-50',
     iconColor: 'text-yellow-600',
     borderColor: 'border-yellow-200',
   },
-  error: {
+  [NotificationSeverity.ERROR]: {
     icon: XCircle,
     bgColor: 'bg-red-50',
     iconColor: 'text-red-600',
     borderColor: 'border-red-200',
   },
-  critical: {
+  [NotificationSeverity.CRITICAL]: {
     icon: AlertCircle,
     bgColor: 'bg-purple-50',
     iconColor: 'text-purple-600',
@@ -93,9 +94,9 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
           </p>
           
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-            <span className="px-2 py-0.5 bg-white rounded-full border border-gray-200">
+            {/* <span className="px-2 py-0.5 bg-white rounded-full border border-gray-200">
               {notification.type}
-            </span>
+            </span> */}
             {notification.source && (
               <span className="px-2 py-0.5 bg-white rounded-full border border-gray-200">
                 {notification.source}
@@ -109,7 +110,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
                 {notification.message}
               </p>
               
-              {notification.districtId && (
+              {/* {notification.districtId && (
                 <p className="text-xs text-gray-500 mt-2">
                   <strong>District:</strong> {notification.districtId}
                 </p>
@@ -130,7 +131,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
                     {JSON.stringify(notification.data, null, 2)}
                   </pre>
                 </details>
-              )}
+              )} */}
             </div>
           )}
         </div>

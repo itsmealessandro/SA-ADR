@@ -11,8 +11,8 @@ multiple physical sensors at the same location.
 """
 
 import random
-from typing import Dict, Any, List, Optional
 from collections import deque
+from typing import Any, Dict, List, Optional
 
 
 class SensorSimulator:
@@ -36,17 +36,25 @@ class SensorSimulator:
         """
         Calculate GPS coordinates for a specific sensor with offset.
         
-        Sensors at the same edge have slightly different positions based on
-        their physical location (e.g., entrance vs exit of a road).
+        Uses actual edge coordinates from graph data if available (stored in base_location),
+        otherwise falls back to gateway location with offset.
         
         Args:
-            sensor_config: Sensor configuration with optional offset_lat and offset_lon
+            sensor_config: Sensor configuration with optional offset_lat, offset_lon,
+                          and base_location (actual edge coordinates from graph)
             
         Returns:
             Tuple of (latitude, longitude) rounded to 6 decimal places
         """
-        lat = self.location['latitude'] + sensor_config.get('offset_lat', 0)
-        lon = self.location['longitude'] + sensor_config.get('offset_lon', 0)
+        # Use actual edge location if available, otherwise use gateway location
+        base_location = sensor_config.get('base_location')
+        if base_location:
+            lat = base_location['latitude'] + sensor_config.get('offset_lat', 0)
+            lon = base_location['longitude'] + sensor_config.get('offset_lon', 0)
+        else:
+            lat = self.location['latitude'] + sensor_config.get('offset_lat', 0)
+            lon = self.location['longitude'] + sensor_config.get('offset_lon', 0)
+        
         return round(lat, 6), round(lon, 6)
 
 
@@ -63,7 +71,7 @@ class SpeedSensorSimulator(SensorSimulator):
         # Moving average window - stores last 10 aggregated readings
         self.speed_window = deque(maxlen=10)
     
-    def generate_data(self, sensors_config: List[Dict]) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated speed data from multiple speed sensors.
         
@@ -74,7 +82,9 @@ class SpeedSensorSimulator(SensorSimulator):
         4. Calculate edge-level speed (average of window)
         
         Args:
-            sensors_config: List of sensor configurations with IDs and positions
+            sensors_config: List of sensor configurations with IDs, positions,
+                           and individual edge_id for each sensor
+            gateway_id: ID of the gateway collecting this data
             
         Returns:
             Dict with aggregated speed data, or None if no sensors configured
@@ -89,11 +99,17 @@ class SpeedSensorSimulator(SensorSimulator):
             current_speed = random.uniform(20, 120)
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
+                'sensor_type': 'speed',
+                'gateway_id': gateway_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'speed_kmh': round(current_speed, 2),
                 'latitude': lat,
-                'longitude': lon
+                'longitude': lon,
+                'unit': 'km/h',
+                'status': 'active'
             }
             sensor_readings.append(sensor_reading)
         
@@ -107,10 +123,12 @@ class SpeedSensorSimulator(SensorSimulator):
         edge_avg_speed = sum(self.speed_window) / len(self.speed_window)
         
         return {
-            'speed_kmh': round(edge_avg_speed, 2),
-            'sensor_count': len(sensor_readings),
-            'sensor_readings': sensor_readings,
-            'sample_count': len(self.speed_window)
+            'readings': sensor_readings,
+            'aggregated': {
+                'avg_speed_kmh': round(edge_avg_speed, 2),
+                'sensor_count': len(sensor_readings),
+                'sample_count': len(self.speed_window)
+            }
         }
 
 
@@ -127,7 +145,7 @@ class WeatherSensorSimulator(SensorSimulator):
         # Moving average window for temperature smoothing
         self.temp_window = deque(maxlen=10)
     
-    def generate_data(self, sensors_config: List[Dict]) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated weather data from multiple weather stations.
         
@@ -138,13 +156,20 @@ class WeatherSensorSimulator(SensorSimulator):
         4. Weather conditions are assumed same for all sensors in area
         
         Args:
-            sensors_config: List of weather sensor configurations
+            sensors_config: List of weather sensor configurations with
+                           individual edge_id for each sensor
+            gateway_id: ID of the gateway collecting this data
             
         Returns:
             Dict with aggregated weather data, or None if no sensors
         """
         if not sensors_config:
             return None
+        
+        # Weather conditions (same for all sensors in this area)
+        weather_conditions = random.choice([
+            'clear', 'cloudy', 'rainy', 'foggy', 'snowy'
+        ])
         
         # Step 1: Collect readings from each weather station
         sensor_readings = []
@@ -155,12 +180,19 @@ class WeatherSensorSimulator(SensorSimulator):
             current_humidity = random.uniform(30, 95)
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
+                'sensor_type': 'weather',
+                'gateway_id': gateway_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'temperature_c': round(current_temp, 2),
                 'humidity': round(current_humidity, 2),
+                'weather_conditions': weather_conditions,
                 'latitude': lat,
-                'longitude': lon
+                'longitude': lon,
+                'unit': '°C',
+                'status': 'active'
             }
             sensor_readings.append(sensor_reading)
         
@@ -172,18 +204,15 @@ class WeatherSensorSimulator(SensorSimulator):
         self.temp_window.append(avg_temp)
         edge_avg_temp = sum(self.temp_window) / len(self.temp_window)
         
-        # Weather conditions (same for all sensors in this area)
-        weather_conditions = random.choice([
-            'clear', 'cloudy', 'rainy', 'foggy', 'snowy'
-        ])
-        
         return {
-            'temperature_c': round(edge_avg_temp, 2),
-            'humidity': round(avg_humidity, 2),
-            'weather_conditions': weather_conditions,
-            'sensor_count': len(sensor_readings),
-            'sensor_readings': sensor_readings,
-            'sample_count': len(self.temp_window)
+            'readings': sensor_readings,
+            'aggregated': {
+                'avg_temperature_c': round(edge_avg_temp, 2),
+                'avg_humidity': round(avg_humidity, 2),
+                'weather_conditions': weather_conditions,
+                'sensor_count': len(sensor_readings),
+                'sample_count': len(self.temp_window)
+            }
         }
 
 
@@ -206,7 +235,7 @@ class CameraSensorSimulator(SensorSimulator):
         self.last_road_condition = 'clear'
         self.condition_persistence = 0  # Frames remaining with same condition
     
-    def generate_data(self, sensors_config: List[Dict]) -> Optional[Dict[str, Any]]:
+    def generate_data(self, sensors_config: List[Dict], gateway_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Generate aggregated camera analytics from multiple cameras.
         
@@ -220,7 +249,9 @@ class CameraSensorSimulator(SensorSimulator):
         Criticality Priority: accident > flooding > obstacles > congestion > clear
         
         Args:
-            sensors_config: List of camera sensor configurations
+            sensors_config: List of camera sensor configurations with
+                           individual edge_id for each sensor
+            gateway_id: ID of the gateway collecting this data
             
         Returns:
             Dict with aggregated road condition analysis, or None if no cameras
@@ -257,13 +288,19 @@ class CameraSensorSimulator(SensorSimulator):
             
             lat, lon = self.calculate_sensor_gps(sensor)
             
+            # Each sensor has its own edge_id from config
             sensor_reading = {
                 'sensor_id': sensor['sensor_id'],
+                'sensor_type': 'camera',
+                'gateway_id': gateway_id,
+                'edge_id': sensor.get('edge_id'),  # Per-sensor edge_id
                 'road_condition': detected_condition,
-                'confidence_score': round(confidence, 3),
+                'confidence': round(confidence, 3),
                 'vehicle_count': vehicle_count,
                 'latitude': lat,
-                'longitude': lon
+                'longitude': lon,
+                'unit': 'vehicles',
+                'status': 'active'
             }
             sensor_readings.append(sensor_reading)
         
@@ -286,7 +323,7 @@ class CameraSensorSimulator(SensorSimulator):
             r for r in sensor_readings 
             if r['road_condition'] == edge_road_condition
         ]
-        edge_confidence = sum(r['confidence_score'] for r in same_condition_readings) / len(same_condition_readings)
+        edge_confidence = sum(r['confidence'] for r in same_condition_readings) / len(same_condition_readings)
         
         # Step 3: Apply condition persistence (temporal coherence)
         # Real conditions persist for multiple iterations
@@ -307,15 +344,12 @@ class CameraSensorSimulator(SensorSimulator):
         if vehicle_counts:
             edge_vehicle_count = int(sum(vehicle_counts) / len(vehicle_counts))
         
-        # Build final data payload
-        data = {
-            'road_condition': edge_road_condition,
-            'confidence_score': round(edge_confidence, 3),
-            'sensor_count': len(sensor_readings),
-            'sensor_readings': sensor_readings
+        return {
+            'readings': sensor_readings,
+            'aggregated': {
+                'road_condition': edge_road_condition,
+                'confidence': round(edge_confidence, 3),
+                'vehicle_count': edge_vehicle_count,
+                'sensor_count': len(sensor_readings)
+            }
         }
-        
-        if edge_vehicle_count is not None:
-            data['vehicle_count'] = edge_vehicle_count
-        
-        return data

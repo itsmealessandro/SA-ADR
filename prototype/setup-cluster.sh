@@ -18,9 +18,12 @@ docker pull influxdb:2.7-alpine
 # 1. Build Images locally
 echo -e "\n${BLUE}--- Step 1: Building Docker Images Locally ---${NC}"
 
-docker build -t digital-twin/city-simulator:latest -f ./city-simulator/Dockerfile .
-docker build -t digital-twin/vehicles-simulator:latest -f ./vehicles-simulator/Dockerfile .
-docker build -t digital-twin/buildings-simulator:latest -f ./buildings-simulator/Dockerfile .
+# State Manager
+docker build -t digital-twin/state-manager:latest ./state-manager
+
+# Notification Manager
+docker build -t digital-twin/notification-manager:latest ./notification-manager
+
 
 # Recommendation Manager 
  echo -e "${BLUE}Building Recommendation Manager (digital-twin/recommendation-manager:latest)...${NC}"
@@ -34,7 +37,7 @@ echo -e "${GREEN}Successfully built Risk Manager${NC}"
 
 # City Simulator
 echo -e "${BLUE}Building City Simulator (digital-twin/city-simulator:latest)...${NC}"
-docker build -t digital-twin/city-simulator:latest -f ./city-simulator/Dockerfile .
+docker build  -t digital-twin/city-simulator:latest -f ./city-simulator/Dockerfile .
 echo -e "${GREEN}Successfully built City Simulator${NC}"
 
 # Vehicles Simulator
@@ -64,7 +67,7 @@ echo -e "${GREEN}Successfully built Buildings Monitor${NC}"
 
 # Dashboard
 echo -e "${BLUE}Building Dashboard (digital-twin/dashboard:latest)...${NC}"
-docker build \
+docker build --no-cache \
   --build-arg VITE_STATE_MANAGER_API_URL=http://localhost:3000 \
   --build-arg VITE_STATE_MANAGER_WS_URL=ws://localhost:3001 \
   --build-arg VITE_NOTIFICATION_MANAGER_API_URL=http://localhost:3002/api \
@@ -84,7 +87,6 @@ if [ "$(kubectl config current-context)" = "minikube" ]; then
     # applications
     minikube image load digital-twin/state-manager:latest
     minikube image load digital-twin/notification-manager:latest
-    minikube image load digital-twin/data-producer:latest
 
     minikube image load digital-twin/recommendation-manager:latest 
     minikube image load digital-twin/risk-detector:latest 
@@ -133,6 +135,3 @@ echo -e "  Org:      emergency-mgmt"
 echo -e "  Buckets:  city_metrics, vehicles_metrics, buildings_metrics"
 echo -e "  ${BLUE}Note: Buckets auto-initialized by influxdb-init-buckets Job${NC}"
 echo -e "${BLUE}==================================================================${NC}"
-
-# Run access-dashboard.sh script
-./access-dashboard.sh

@@ -145,28 +145,15 @@ export function createRoutes(
   });
 
   /**
-   * GET /state/publicTransport - Get public transport data
+   * GET /state/vehicles - Get all vehicles data
    */
-  router.get('/state/publicTransport', async (_req: Request, res: Response) => {
+  router.get('/state/vehicles', async (_req: Request, res: Response) => {
     try {
-      const publicTransport = await redisManager.getPublicTransport();
-      res.json(publicTransport || { buses: [], stations: [] });
+      const vehicles = await redisManager.getVehicles();
+      res.json(vehicles || []);
     } catch (error) {
-      logger.error('Error retrieving public transport:', error);
-      res.status(500).json({ error: 'Failed to retrieve public transport' });
-    }
-  });
-
-  /**
-   * GET /state/emergencyServices - Get emergency services data
-   */
-  router.get('/state/emergencyServices', async (_req: Request, res: Response) => {
-    try {
-      const emergencyServices = await redisManager.getEmergencyServices();
-      res.json(emergencyServices || { incidents: [], units: [] });
-    } catch (error) {
-      logger.error('Error retrieving emergency services:', error);
-      res.status(500).json({ error: 'Failed to retrieve emergency services' });
+      logger.error('Error retrieving vehicles:', error);
+      res.status(500).json({ error: 'Failed to retrieve vehicles' });
     }
   });
 

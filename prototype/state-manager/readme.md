@@ -45,16 +45,17 @@ This district-centric data model enables:
 RESTful API that provides access to the current city state and related operations.
 
 **Endpoints:**
+- `GET /health` - Health check endpoint (returns service status)
 - `GET /state` - Returns the complete current state of the digital twin as JSON (City Manager only)
 - `GET /state/districts` - Returns all districts with their sensors, buildings, and weather stations (City Manager only)
-- `GET /state/districts/{districtId}` - Returns a specific district state (City Manager or assigned District Operator)
-- `GET /state/districts/{districtId}/graph` - Returns the district's road graph with traffic conditions
-- `GET /state/districts/{districtId}/sensors` - Returns all sensor readings within a district
-- `GET /state/districts/{districtId}/buildings` - Returns all buildings with occupancy within a district
-- `GET /state/districts/{districtId}/weather` - Returns weather stations within a district
-- `GET /state/publicTransport` - Returns city-wide public transport data (City Manager only)
-- `GET /state/emergencyServices` - Returns emergency incidents and units (City Manager only)
-- `GET /health` - Health check endpoint (no authentication required)
+- `GET /state/districts/:districtId` - Returns a specific district state (City Manager or assigned District Operator)
+- `GET /state/districts/:districtId/sensors` - Returns all sensor readings within a district
+- `GET /state/districts/:districtId/buildings` - Returns all buildings with occupancy within a district
+- `GET /state/districts/:districtId/weather` - Returns weather stations within a district
+- `GET /state/vehicles` - Returns all vehicles data (ambulances, fire trucks, etc.)
+- `GET /state/graph` - Returns city-wide road graph with traffic conditions
+- `GET /snapshots/latest` - Returns the most recent state snapshot
+- `GET /snapshots/:id` - Returns a specific snapshot by ID
 
 ### 2. **WebSocket Connection**
 
@@ -104,18 +105,10 @@ Document database for persisting historical snapshots of the city state at speci
 
 The microservice consumes data from multiple Kafka topics, each representing different data sources in the city. Topics are partitioned by district to enable parallel processing and align with the role-based access model.
 
-**Kafka Topics (Partitioned by District):**
-- `sensors.environmental` - PM2.5, noise, air quality sensors (partitioned by districtId)
-- `sensors.traffic` - Traffic cameras, vehicle counters, parking occupancy (partitioned by districtId)
-- `buildings.occupancy` - Building occupancy, HVAC, energy consumption (partitioned by districtId)
-- `buildings.sensors` - Temperature, humidity, water, security sensors (partitioned by districtId)
-- `weather.stations` - Weather readings from distributed stations (partitioned by districtId)
-- `traffic.graph` - Road segment traffic conditions and incidents (partitioned by districtId)
-
-**City-Wide Topics (No Partitioning):**
-- `transport.gps` - Real-time bus and vehicle GPS locations (cross-district)
-- `transport.stations` - Metro and transit station data
-- `emergency.incidents` - Emergency service incidents and responses (cross-district)
+**Kafka Topics:**
+- `city.gateways` - Gateway sensor data (speed, weather, camera sensors) partitioned by districtId
+- `buildings.state` - Building state updates (air quality, acoustic, displays, resources) partitioned by districtId
+- `vehicles.gps` - Real-time vehicle GPS locations and telemetry (cross-district)
 
 **Partition Strategy:**
 Each message includes a `districtId` field used as the partition key. This ensures:
@@ -151,10 +144,11 @@ The digital twin represents a smart city with the following hierarchical structu
 
 ### Districts
 
-The city is divided into geographic districts (e.g., Downtown District, Midtown District, Residential District), each containing:
-- **Sensors**: Environmental (PM2.5, noise), traffic (cameras, vehicle counters), parking occupancy
-- **Buildings**: Government, commercial, residential buildings with embedded sensors (temperature, humidity, energy, occupancy, water, security)
-- **Weather Stations**: Comprehensive meteorological data (temperature, humidity, wind, precipitation, pressure)
+The city is divided into geographic districts (e.g., District Roio, District Centro, District Pettino), each containing:
+- **Gateways**: Physical data collectors that aggregate sensor data from multiple road segments
+- **Sensors**: Flattened sensor data (speed, weather, camera) extracted from gateways for convenience
+- **Buildings**: Government, commercial, residential buildings with air quality, acoustic, and display sensors
+- **Weather Stations**: Meteorological data collected by gateways
 
 ### City Graph
 
@@ -162,17 +156,11 @@ Road network representation with:
 - **Nodes**: Intersections with traffic light states and cycle times
 - **Edges**: Road segments with GeoJSON LineString geometry, traffic conditions (congestion level, speed, vehicle count), and incidents
 
-### Public Transport
+### Vehicles
 
-- **Buses**: Real-time GPS location, occupancy, route information, next stop
-- **Stations**: Metro stations with crowd density sensors
+- **All Vehicles**: Real-time GPS location, movement data, battery/resources, sensors, and route planning for ambulances, fire trucks, police, taxis, and other monitored vehicles
 
-### Emergency Services
-
-- **Incidents**: Active emergencies with location, priority, and responding units
-- **Units**: Ambulances, fire trucks, police with real-time positions and status
-
-See `mock/type.ts` for complete TypeScript interface definitions and `mock/city-digital-twin.json` for a sample state representation.
+See [`src/types/index.ts`](src/types/index.ts) for complete TypeScript interface definitions.
 
 ## Deployment and Scalability
 

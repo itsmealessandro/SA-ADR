@@ -4,20 +4,20 @@ Monitor Python - Kafka Consumer and InfluxDB Writer
 Consumes sensor data from Kafka, validates, transforms, and writes to InfluxDB.
 """
 
+import json
+import logging
 import os
 import sys
 import time
-import json
-import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 # Add parent directory to path to import common module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from kafka import KafkaConsumer
-from kafka.errors import KafkaError
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
+from kafka import KafkaConsumer
+from kafka.errors import KafkaError
 
 # Configure logging
 logging.basicConfig(
@@ -53,14 +53,12 @@ class MonitorConsumer:
         logger.info("Monitor Consumer initialized")
     
     def _init_kafka_consumer(self) -> KafkaConsumer:
-        """Initialize Kafka consumer with retry logic for multiple topics."""
+        """Initialize Kafka consumer with retry logic for gateway topic."""
         from common.kafka_utils import create_multi_topic_consumer
-        
-        # Get all city topics
+
+        # Use the unified gateway topic
         topics = [
-            os.getenv('KAFKA_TOPIC_SPEED', 'city-speed-sensors'),
-            os.getenv('KAFKA_TOPIC_WEATHER', 'city-weather-sensors'),
-            os.getenv('KAFKA_TOPIC_CAMERA', 'city-camera-sensors')
+            os.getenv('KAFKA_TOPIC_GATEWAY', 'city-gateway-data')
         ]
         
         return create_multi_topic_consumer(
@@ -93,8 +91,10 @@ class MonitorConsumer:
                     raise
     
     def validate_message(self, message: Dict[str, Any]) -> bool:
-        """Validate message structure and required fields."""
-        required_fields = ['district_id', 'edge_id', 'sensor_type', 'timestamp', 'latitude', 'longitude']
+        """Validate gateway message structure and required fields."""
+        # Required fields for gateway payload
+        # Note: edge_id is NOT required at gateway level - it's a property of individual sensors
+        required_fields = ['gateway_id', 'district_id', 'last_updated', 'location', 'metadata', 'sensors']
         
         # Check required fields
         for field in required_fields:
@@ -102,141 +102,149 @@ class MonitorConsumer:
                 logger.error(f"Validation error: Missing required field '{field}'")
                 return False
         
-        # Validate sensor type
-        if message['sensor_type'] not in ['speed', 'weather', 'camera']:
-            logger.error(f"Validation error: Invalid sensor_type '{message['sensor_type']}'")
-            return False
-        
-        # Validate speed sensor data
-        if message['sensor_type'] == 'speed':
-            if 'speed_kmh' not in message:
-                logger.error("Validation error: Missing 'speed_kmh' for speed sensor")
-                return False
-            if not isinstance(message['speed_kmh'], (int, float)):
-                logger.error("Validation error: 'speed_kmh' must be numeric")
-                return False
-        
-        # Validate weather sensor data
-        if message['sensor_type'] == 'weather':
-            required_weather_fields = ['temperature_c', 'humidity', 'weather_conditions']
-            for field in required_weather_fields:
-                if field not in message:
-                    logger.error(f"Validation error: Missing '{field}' for weather sensor")
-                    return False
-        
-        # Validate camera sensor data
-        if message['sensor_type'] == 'camera':
-            # Required fields for camera sensors
-            if 'road_condition' not in message:
-                logger.error("Validation error: Missing 'road_condition' for camera sensor")
-                return False
-            
-            # Validate road_condition value
-            valid_conditions = ['clear', 'congestion', 'accident', 'obstacles', 'flooding']
-            if message['road_condition'] not in valid_conditions:
-                logger.error(f"Validation error: Invalid road_condition '{message['road_condition']}'")
-                return False
-            
-            # Validate confidence_score
-            if 'confidence_score' not in message:
-                logger.error("Validation error: Missing 'confidence_score' for camera sensor")
-                return False
-            if not isinstance(message['confidence_score'], (int, float)):
-                logger.error("Validation error: 'confidence_score' must be numeric")
-                return False
-            if not (0.0 <= message['confidence_score'] <= 1.0):
-                logger.error(f"Validation error: 'confidence_score' must be between 0 and 1, got {message['confidence_score']}")
-                return False
-            
-            # Optional: Validate vehicle_count if present
-            if 'vehicle_count' in message:
-                if not isinstance(message['vehicle_count'], int) or message['vehicle_count'] < 0:
-                    logger.error("Validation error: 'vehicle_count' must be a non-negative integer")
-                    return False
-        
-        # Validate GPS coordinates (all sensor types)
-        if 'latitude' not in message:
-            logger.error("Validation error: Missing 'latitude'")
-            return False
-        if 'longitude' not in message:
-            logger.error("Validation error: Missing 'longitude'")
+        # Validate location
+        if 'latitude' not in message['location'] or 'longitude' not in message['location']:
+            logger.error("Validation error: Missing latitude/longitude in location")
             return False
         
         # Validate coordinate ranges
-        if not isinstance(message['latitude'], (int, float)):
-            logger.error("Validation error: 'latitude' must be numeric")
+        lat = message['location']['latitude']
+        lon = message['location']['longitude']
+        if not (-90 <= lat <= 90):
+            logger.error(f"Validation error: 'latitude' must be between -90 and 90, got {lat}")
             return False
-        if not isinstance(message['longitude'], (int, float)):
-            logger.error("Validation error: 'longitude' must be numeric")
-            return False
-        
-        if not (-90 <= message['latitude'] <= 90):
-            logger.error(f"Validation error: 'latitude' must be between -90 and 90, got {message['latitude']}")
-            return False
-        if not (-180 <= message['longitude'] <= 180):
-            logger.error(f"Validation error: 'longitude' must be between -180 and 180, got {message['longitude']}")
+        if not (-180 <= lon <= 180):
+            logger.error(f"Validation error: 'longitude' must be between -180 and 180, got {lon}")
             return False
         
         # Validate timestamp format
         try:
-            datetime.fromisoformat(message['timestamp'].replace('Z', '+00:00'))
+            datetime.fromisoformat(message['last_updated'].replace('Z', '+00:00'))
         except ValueError:
-            logger.error(f"Validation error: Invalid timestamp format '{message['timestamp']}'")
+            logger.error(f"Validation error: Invalid timestamp format '{message['last_updated']}'")
             return False
+        
+        # Validate sensors array
+        if not isinstance(message['sensors'], list):
+            logger.error("Validation error: 'sensors' must be an array")
+            return False
+        
+        # Validate each sensor
+        for sensor in message['sensors']:
+            if not self.validate_sensor(sensor):
+                return False
+        
+        return True
+    
+    def validate_sensor(self, sensor: Dict[str, Any]) -> bool:
+        """Validate individual sensor in gateway payload."""
+        required_fields = ['sensor_id', 'sensor_type', 'gateway_id', 'edge_id', 'latitude', 'longitude', 'status']
+        
+        for field in required_fields:
+            if field not in sensor:
+                logger.error(f"Sensor validation error: Missing required field '{field}'")
+                return False
+        
+        # Validate sensor type
+        if sensor['sensor_type'] not in ['speed', 'weather', 'camera']:
+            logger.error(f"Sensor validation error: Invalid sensor_type '{sensor['sensor_type']}'")
+            return False
+        
+        # Validate sensor-specific fields
+        if sensor['sensor_type'] == 'speed':
+            if 'speed_kmh' not in sensor:
+                logger.error("Sensor validation error: Missing 'speed_kmh' for speed sensor")
+                return False
+        
+        if sensor['sensor_type'] == 'weather':
+            if 'temperature_c' not in sensor or 'humidity' not in sensor:
+                logger.error("Sensor validation error: Missing weather fields")
+                return False
+        
+        if sensor['sensor_type'] == 'camera':
+            if 'road_condition' not in sensor:
+                logger.error("Sensor validation error: Missing 'road_condition' for camera sensor")
+                return False
+            valid_conditions = ['clear', 'congestion', 'accident', 'obstacles', 'flooding']
+            if sensor['road_condition'] not in valid_conditions:
+                logger.error(f"Sensor validation error: Invalid road_condition '{sensor['road_condition']}'")
+                return False
         
         return True
     
     def transform_to_influx_point(self, message: Dict[str, Any]) -> Optional[Point]:
-        """Transform validated message to InfluxDB Point."""
+        """Transform validated gateway message to InfluxDB Point."""
         try:
             # Parse timestamp
-            timestamp = datetime.fromisoformat(message['timestamp'].replace('Z', '+00:00'))
+            timestamp = datetime.fromisoformat(message['last_updated'].replace('Z', '+00:00'))
             
-            # Create point with measurement name based on sensor type
-            measurement = f"sensor_{message['sensor_type']}"
-            point = Point(measurement)
+            # Create point for gateway metadata
+            # Note: edge_id is NOT included at gateway level - sensors have their own edge_id
+            gateway_point = Point("gateway_status")
+            gateway_point.tag('gateway_id', message['gateway_id'])
+            gateway_point.tag('district_id', message['district_id'])
+            gateway_point.tag('gateway_name', message['metadata']['name'])
+            gateway_point.field('sensor_count', len(message['sensors']))
+            gateway_point.field('latitude', float(message['location']['latitude']))
+            gateway_point.field('longitude', float(message['location']['longitude']))
+            gateway_point.time(timestamp, WritePrecision.NS)
             
-            # Add tags (indexed fields for querying)
-            point.tag('district_id', message['district_id'])
-            point.tag('edge_id', message['edge_id'])
-            point.tag('sensor_type', message['sensor_type'])
-            
-            # Add GPS coordinates as fields (numeric values for aggregation/filtering)
-            point.field('latitude', float(message['latitude']))
-            point.field('longitude', float(message['longitude']))
-            
-            # Add fields (actual data values)
-            if message['sensor_type'] == 'speed':
-                point.field('speed_kmh', float(message['speed_kmh']))
-                if 'sample_count' in message:
-                    point.field('sample_count', int(message['sample_count']))
-            
-            elif message['sensor_type'] == 'weather':
-                point.field('temperature_c', float(message['temperature_c']))
-                point.field('humidity', float(message['humidity']))
-                point.tag('weather_conditions', message['weather_conditions'])
-                if 'sample_count' in message:
-                    point.field('sample_count', int(message['sample_count']))
-            
-            elif message['sensor_type'] == 'camera':
-                # Tag for road condition (categorical - good for grouping/filtering)
-                point.tag('road_condition', message['road_condition'])
-                
-                # Fields for numeric data
-                point.field('confidence_score', float(message['confidence_score']))
-                
-                # Optional vehicle count
-                if 'vehicle_count' in message:
-                    point.field('vehicle_count', int(message['vehicle_count']))
-            
-            # Set timestamp with nanosecond precision
-            point.time(timestamp, WritePrecision.NS)
-            
-            return point
+            return gateway_point
             
         except Exception as e:
             logger.error(f"Transform error: {e}")
             return None
+    
+    def transform_sensors_to_influx_points(self, message: Dict[str, Any]) -> List[Point]:
+        """Transform gateway sensors to individual InfluxDB Points."""
+        points = []
+        try:
+            timestamp = datetime.fromisoformat(message['last_updated'].replace('Z', '+00:00'))
+            
+            for sensor in message['sensors']:
+                sensor_type = sensor['sensor_type']
+                measurement = f"sensor_{sensor_type}"
+                point = Point(measurement)
+                
+                # Common tags
+                point.tag('district_id', message['district_id'])
+                point.tag('gateway_id', sensor['gateway_id'])
+                point.tag('edge_id', sensor['edge_id'])
+                point.tag('sensor_id', sensor['sensor_id'])
+                point.tag('status', sensor.get('status', 'active'))
+                
+                # Location fields
+                point.field('latitude', float(sensor['latitude']))
+                point.field('longitude', float(sensor['longitude']))
+                
+                # Sensor-specific fields
+                if sensor_type == 'speed':
+                    if 'speed_kmh' in sensor:
+                        point.field('speed_kmh', float(sensor['speed_kmh']))
+                
+                elif sensor_type == 'weather':
+                    if 'temperature_c' in sensor:
+                        point.field('temperature_c', float(sensor['temperature_c']))
+                    if 'humidity' in sensor:
+                        point.field('humidity', float(sensor['humidity']))
+                    if 'weather_conditions' in sensor:
+                        point.tag('weather_conditions', sensor['weather_conditions'])
+                
+                elif sensor_type == 'camera':
+                    if 'road_condition' in sensor:
+                        point.tag('road_condition', sensor['road_condition'])
+                    if 'confidence' in sensor:
+                        point.field('confidence', float(sensor['confidence']))
+                    if 'vehicle_count' in sensor and sensor['vehicle_count'] is not None:
+                        point.field('vehicle_count', int(sensor['vehicle_count']))
+                
+                point.time(timestamp, WritePrecision.NS)
+                points.append(point)
+            
+        except Exception as e:
+            logger.error(f"Transform sensors error: {e}")
+        
+        return points
     
     def write_to_influxdb(self, point: Point) -> bool:
         """Write point to InfluxDB."""
@@ -247,31 +255,40 @@ class MonitorConsumer:
             logger.error(f"InfluxDB write error: {e}")
             return False
     
+    def write_points_to_influxdb(self, points: List[Point]) -> int:
+        """Write multiple points to InfluxDB. Returns count of successful writes."""
+        written = 0
+        for point in points:
+            if self.write_to_influxdb(point):
+                written += 1
+        return written
+    
     def process_message(self, message: Dict[str, Any]):
-        """Process a single message: validate, transform, and write."""
+        """Process a single gateway message: validate, transform, and write."""
         self.messages_processed += 1
         
         # Validate
         if not self.validate_message(message):
             self.validation_errors += 1
-            logger.warning(f"Skipping invalid message: {message}")
+            logger.warning(f"Skipping invalid message from gateway: {message.get('gateway_id', 'unknown')}")
             return
         
         self.messages_validated += 1
         
-        # Transform
-        point = self.transform_to_influx_point(message)
-        if not point:
-            logger.warning(f"Failed to transform message: {message}")
-            return
+        # Transform gateway metadata
+        gateway_point = self.transform_to_influx_point(message)
+        if gateway_point:
+            self.write_to_influxdb(gateway_point)
         
-        # Write to InfluxDB
-        if self.write_to_influxdb(point):
-            self.messages_written += 1
-            logger.info(
-                f"Written {message['sensor_type']} data from "
-                f"{message['district_id']}/{message['edge_id']}"
-            )
+        # Transform and write individual sensor points
+        sensor_points = self.transform_sensors_to_influx_points(message)
+        written = self.write_points_to_influxdb(sensor_points)
+        
+        self.messages_written += written
+        logger.info(
+            f"Written {written} sensor points from gateway "
+            f"{message['gateway_id']} ({message['district_id']})"
+        )
     
     def log_statistics(self):
         """Log processing statistics."""

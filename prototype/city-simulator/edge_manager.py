@@ -1,62 +1,90 @@
 """
-Edge Manager Module
+Edge Manager Module (Gateway)
 
-This module manages a single edge location with its sensors.
-Each edge runs in a separate thread, simulating concurrent operations
+This module manages a single gateway location with its sensors.
+Each gateway runs in a separate thread, simulating concurrent operations
 at different physical locations in the city.
 
-An edge represents a specific location (e.g., a street intersection) that
-hosts multiple sensors of different types.
+A gateway represents a physical data collector in an area that hosts multiple 
+sensors of different types. Each sensor monitors a specific city graph edge.
+The gateway aggregates all sensor data and sends it to Kafka as a unified payload.
+
+Edge ID vs Gateway ID:
+- gateway_id: Unique identifier for the gateway device (GW-XXXXX). The gateway is the 
+  physical data collector/aggregator in an area.
+- edge_id: Property of individual sensors. Each sensor has its own edge_id referring
+  to the specific graph edge (E-00000 to E-03458) where that sensor is located.
+  One gateway manages sensors across MULTIPLE graph edges.
 """
 
-import time
 import logging
+import random
 import threading
-from datetime import datetime
-from typing import Dict, Any
+import time
 from collections import deque
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from sensor_simulator import SpeedSensorSimulator, WeatherSensorSimulator, CameraSensorSimulator
+from sensor_simulator import (CameraSensorSimulator, SpeedSensorSimulator,
+                              WeatherSensorSimulator)
 
 logger = logging.getLogger(__name__)
+
+# Gateway metadata
+GATEWAY_VERSION = "1.0.0"
+GATEWAY_FIRMWARE = "EdgeOS 2.1.3"
 
 
 class EdgeManager:
     """
-    Manages a single edge location with multiple sensors.
+    Manages a single gateway with sensors across multiple graph edges.
+    
+    This class acts as a Gateway that gathers sensor data from all sensors
+    in its coverage area and sends it to Kafka as a unified payload.
+    Each sensor knows its own edge_id (which graph edge it monitors).
     
     Responsibilities:
-    - Coordinate data generation from all sensors at this edge
-    - Aggregate sensor data per type (speed, weather, camera)
-    - Send aggregated data to Kafka message bus
+    - Coordinate data generation from all sensors at this gateway
+    - Aggregate all sensor data into a single gateway payload
+    - Send gateway payload to Kafka message bus
     - Handle local buffering for resilience
     - Run in separate thread for concurrent operation
     
     Thread Safety:
     - Each EdgeManager has its own thread
     - Shares only the Kafka producer (which is thread-safe)
-    - No shared state between edges
+    - No shared state between gateways
     """
     
     def __init__(self, district_id: str, edge_config: Dict, 
                  kafka_producer: Any, kafka_topics: Dict[str, str], 
-                 stop_event: threading.Event):
+                 stop_event: threading.Event, sampling_interval: float = 3.0):
         """
-        Initialize an Edge Manager.
+        Initialize a Gateway Manager.
         
         Args:
-            district_id: ID of the district this edge belongs to
-            edge_config: Configuration dict from city_config.json
+            district_id: ID of the district this gateway belongs to
+            edge_config: Configuration dict containing:
+                - gateway_id: Unique gateway identifier
+                - name: Human-readable gateway name
+                - location: Dict with latitude/longitude
+                - sensors: Dict mapping sensor types to list of sensor configs
+                  Each sensor config includes its own edge_id
+                - edge_range: Optional dict with start/end edges covered
             kafka_producer: Shared Kafka producer instance (thread-safe)
             kafka_topics: Dictionary mapping sensor types to topic names
             stop_event: Threading event to signal shutdown
+            sampling_interval: Sampling interval in seconds from config
         """
-        # Edge identification
+        # Gateway identification
         self.district_id = district_id
-        self.edge_id = edge_config['edge_id']
-        self.edge_name = edge_config['name']
+        self.gateway_id = edge_config.get('gateway_id', 'unknown-gateway')
+        self.gateway_name = edge_config.get('name', f"Gateway {self.gateway_id}")
         self.location = edge_config['location']
         self.sensors_config = edge_config.get('sensors', {})
+        
+        # Edge range info (for metadata)
+        self.edge_range = edge_config.get('edge_range', {})
         
         # Kafka configuration
         self.kafka_producer = kafka_producer
@@ -70,75 +98,122 @@ class EdgeManager:
         self.camera_simulator = CameraSensorSimulator(self.location)
         
         # Local buffer for resilience
-        # If Kafka is temporarily unavailable, messages are buffered here
         self.local_buffer = deque(maxlen=1000)
         
-        # Randomized sampling interval to avoid synchronization
-        # (prevents all edges from sending data at exactly the same time)
-        import random
-        self.sampling_interval = random.uniform(2.5, 4.5)
+        # Use configured sampling interval with small randomization (±10%) to avoid synchronization
+        jitter = sampling_interval * 0.1
+        self.sampling_interval = random.uniform(
+            sampling_interval - jitter, 
+            sampling_interval + jitter
+        )
         
         # Log initialization
         speed_count = len(self.sensors_config.get('speed', []))
         weather_count = len(self.sensors_config.get('weather', []))
         camera_count = len(self.sensors_config.get('camera', []))
+        total_sensors = speed_count + weather_count + camera_count
         
         logger.info(
-            f"EdgeManager initialized: {district_id}/{self.edge_id} ({self.edge_name}) - "
-            f"Sensors: {speed_count} speed, {weather_count} weather, {camera_count} camera"
+            f"Gateway initialized: {self.gateway_id} ({self.gateway_name}) - "
+            f"District: {district_id}, Sensors: {total_sensors} "
+            f"({speed_count} speed, {weather_count} weather, {camera_count} camera)"
         )
     
-    def generate_sensor_data(self, sensor_type: str) -> Dict[str, Any]:
+    def generate_sensor_data(self, sensor_type: str) -> Optional[Dict[str, Any]]:
         """
         Generate data for a specific sensor type.
         
-        This method coordinates with the appropriate sensor simulator
-        and adds common metadata (district, edge, timestamp, GPS).
+        Each sensor in the config has its own edge_id. The sensor simulator
+        will use this edge_id when generating data for each sensor.
         
         Args:
             sensor_type: One of 'speed', 'weather', 'camera'
             
         Returns:
-            Complete sensor data message ready for Kafka, or None if no sensors
+            Sensor data dict with readings, or None if no sensors
         """
+        sensors_list = self.sensors_config.get(sensor_type, [])
+        if not sensors_list:
+            return None
+        
         # Get sensor-specific data from appropriate simulator
+        # Pass the full sensor configs (which include per-sensor edge_id)
         if sensor_type == 'speed':
             sensor_data = self.speed_simulator.generate_data(
-                self.sensors_config.get('speed', [])
+                sensors_list,
+                self.gateway_id
             )
         elif sensor_type == 'weather':
             sensor_data = self.weather_simulator.generate_data(
-                self.sensors_config.get('weather', [])
+                sensors_list,
+                self.gateway_id
             )
         elif sensor_type == 'camera':
             sensor_data = self.camera_simulator.generate_data(
-                self.sensors_config.get('camera', [])
+                sensors_list,
+                self.gateway_id
             )
         else:
             return None
         
-        # If no sensors of this type, skip
-        if sensor_data is None:
-            return None
+        return sensor_data
+    
+    def generate_gateway_payload(self) -> Dict[str, Any]:
+        """
+        Generate the unified gateway payload containing all sensor data.
         
-        # Add common metadata to create complete message
-        message = {
+        This method aggregates data from all sensors at this gateway
+        and returns a single payload ready for Kafka.
+        
+        Returns:
+            Complete gateway payload with metadata and sensors array
+        """
+        # Collect sensor data from all sensor types
+        sensors = []
+        
+        # Generate speed sensor data
+        speed_data = self.generate_sensor_data('speed')
+        if speed_data:
+            sensors.extend(speed_data.get('readings', []))
+        
+        # Generate weather sensor data
+        weather_data = self.generate_sensor_data('weather')
+        if weather_data:
+            sensors.extend(weather_data.get('readings', []))
+        
+        # Generate camera sensor data
+        camera_data = self.generate_sensor_data('camera')
+        if camera_data:
+            sensors.extend(camera_data.get('readings', []))
+        
+        # Build the gateway payload
+        # Note: edge_id is NOT included at gateway level - it's a property of individual sensors
+        payload = {
+            'gateway_id': self.gateway_id,
             'district_id': self.district_id,
-            'edge_id': self.edge_id,
-            'sensor_type': sensor_type,
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'latitude': self.location['latitude'],
-            'longitude': self.location['longitude'],
+            'location': {
+                'latitude': self.location['latitude'],
+                'longitude': self.location['longitude']
+            },
+            'last_updated': datetime.utcnow().isoformat() + 'Z',
+            'metadata': {
+                'name': self.gateway_name,
+                'version': GATEWAY_VERSION,
+                'firmware': GATEWAY_FIRMWARE,
+                'sensor_counts': {
+                    'speed': len(self.sensors_config.get('speed', [])),
+                    'weather': len(self.sensors_config.get('weather', [])),
+                    'camera': len(self.sensors_config.get('camera', []))
+                }
+            },
+            'sensors': sensors
         }
         
-        # Merge sensor-specific data
-        message.update(sensor_data)
-        
-        return message
+        return payload
     
     def send_to_kafka(self, data: Dict[str, Any]) -> bool:
         """
-        Send data to Kafka with error handling.
+        Send gateway data to Kafka with error handling.
         
         Implements resilience pattern:
         1. Try to send to Kafka
@@ -146,35 +221,31 @@ class EdgeManager:
         3. Retry buffered messages later
         
         Args:
-            data: Message data to send
+            data: Gateway payload to send
             
         Returns:
             True if sent successfully, False if buffered
         """
         try:
-            # Determine topic based on sensor type
-            sensor_type = data.get('sensor_type')
-            topic = self.kafka_topics.get(sensor_type)
+            # Use the gateway topic for all gateway data
+            topic = self.kafka_topics.get('gateway', 'city-gateway-data')
             
-            if not topic:
-                logger.error(f"[{self.edge_id}] No topic configured for sensor type: {sensor_type}")
-                return False
-            
-            logger.info(f"[{self.edge_id}] 📤 Sending {sensor_type} data to {topic}...")
+            logger.info(f"[{self.gateway_id}] 📤 Sending gateway data to {topic}...")
             
             # Async send with timeout and partition key
-            # Using edge_id as key ensures all data for this edge goes to same partition
+            # Using gateway_id as key ensures all data for this gateway goes to same partition
             future = self.kafka_producer.send(
                 topic, 
-                key=self.edge_id,  # Partition key
+                key=self.gateway_id,  # Partition key
                 value=data
             )
             future.get(timeout=10)  # Wait max 10 seconds
-            logger.info(f"[{self.edge_id}] ✓ Sent {sensor_type} data to {topic}")
+            sensor_count = len(data.get('sensors', []))
+            logger.info(f"[{self.gateway_id}] ✓ Sent gateway data ({sensor_count} sensors) to {topic}")
             return True
         except Exception as e:
             # Log error and buffer message for retry
-            logger.error(f"[{self.edge_id}] Kafka error: {e}. Buffering message.")
+            logger.error(f"[{self.gateway_id}] Kafka error: {e}. Buffering message.")
             self.local_buffer.append(data)
             return False
     
@@ -188,7 +259,7 @@ class EdgeManager:
         if not self.local_buffer:
             return
         
-        logger.info(f"[{self.edge_id}] Retrying {len(self.local_buffer)} buffered messages")
+        logger.info(f"[{self.gateway_id}] Retrying {len(self.local_buffer)} buffered messages")
         
         # Try to send all buffered messages
         messages_to_retry = list(self.local_buffer)
@@ -201,45 +272,34 @@ class EdgeManager:
     
     def run(self):
         """
-        Main loop for this edge: generate and send sensor data.
+        Main loop for this gateway: generate and send gateway data.
         
         Execution Flow:
-        1. Rotate through sensor types (speed → weather → camera)
-        2. Generate data for current sensor type
-        3. Send to Kafka
-        4. Wait for next interval
-        5. Repeat until stop signal
+        1. Generate unified gateway payload with all sensors
+        2. Send to Kafka
+        3. Wait for next interval
+        4. Repeat until stop signal
         
-        This method runs in a separate thread, one per edge.
+        This method runs in a separate thread, one per gateway.
         """
-        logger.info(f"[{self.edge_id}] Starting edge loop (interval: {self.sampling_interval:.1f}s)")
+        logger.info(f"[{self.gateway_id}] Starting gateway loop (interval: {self.sampling_interval:.1f}s)")
         
         iteration = 0
         while not self.stop_event.is_set():
             try:
                 iteration += 1
                 
-                # Rotate between sensor types
-                # Cycle: 0=speed, 1=weather, 2=camera
-                sensor_cycle = iteration % 3
-                if sensor_cycle == 0:
-                    sensor_type = 'speed'
-                elif sensor_cycle == 1:
-                    sensor_type = 'weather'
+                logger.info(f"[{self.gateway_id}] Iteration {iteration}: Generating gateway payload")
+                
+                # Generate unified gateway payload with all sensor data
+                payload = self.generate_gateway_payload()
+                
+                # Send gateway payload to Kafka
+                if payload.get('sensors'):
+                    logger.info(f"[{self.gateway_id}] Payload generated with {len(payload['sensors'])} sensors, sending to Kafka...")
+                    self.send_to_kafka(payload)
                 else:
-                    sensor_type = 'camera'
-                
-                logger.info(f"[{self.edge_id}] Iteration {iteration}: Generating {sensor_type} data")
-                
-                # Generate data for current sensor type
-                data = self.generate_sensor_data(sensor_type)
-                
-                # Send if data was generated (skip if no sensors of this type)
-                if data is not None:
-                    logger.info(f"[{self.edge_id}] Data generated, sending to Kafka...")
-                    self.send_to_kafka(data)
-                else:
-                    logger.info(f"[{self.edge_id}] No {sensor_type} sensors, skipping")
+                    logger.info(f"[{self.gateway_id}] No sensors configured, skipping")
                 
                 # Periodically retry buffered messages
                 if iteration % 10 == 0:
@@ -250,7 +310,7 @@ class EdgeManager:
                 
             except Exception as e:
                 # Log error but keep running (fault tolerance)
-                logger.error(f"[{self.edge_id}] Error in edge loop: {e}")
+                logger.error(f"[{self.gateway_id}] Error in gateway loop: {e}")
                 self.stop_event.wait(timeout=self.sampling_interval)
         
-        logger.info(f"[{self.edge_id}] Edge loop stopped")
+        logger.info(f"[{self.gateway_id}] Gateway loop stopped")

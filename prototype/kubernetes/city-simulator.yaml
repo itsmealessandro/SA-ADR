@@ -1,9 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: city-simulator
 spec:
-  replicas: 1
+  serviceName: city-simulator
+  replicas: 3  # Can scale horizontally - each instance handles a partition of edges
+  podManagementPolicy: Parallel  # Start all pods simultaneously
   selector:
     matchLabels:
       app: city-simulator
@@ -12,6 +14,16 @@ spec:
       labels:
         app: city-simulator
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.28
+          env:
+            - name: KAFKA_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: digital-twin-config
+                  key: KAFKA_PORT
+          command: ['sh', '-c', 'until nc -z kafka $KAFKA_PORT; do echo waiting for kafka; sleep 2; done;']
       containers:
         - name: city-simulator
           image: digital-twin/city-simulator:latest
@@ -22,25 +34,31 @@ spec:
                 configMapKeyRef:
                   name: digital-twin-config
                   key: KAFKA_BROKERS
-            - name: KAFKA_TOPIC_SPEED
+            - name: KAFKA_TOPIC_GATEWAY
               valueFrom:
                 configMapKeyRef:
                   name: digital-twin-config
-                  key: KAFKA_TOPIC_SPEED
-            - name: KAFKA_TOPIC_WEATHER
+                  key: KAFKA_TOPIC_GATEWAY
+            # Horizontal scaling - Pod ordinal is used as instance ID
+            - name: POD_NAME
               valueFrom:
-                configMapKeyRef:
-                  name: digital-twin-config
-                  key: KAFKA_TOPIC_WEATHER
-            - name: KAFKA_TOPIC_CAMERA
-              valueFrom:
-                configMapKeyRef:
-                  name: digital-twin-config
-                  key: KAFKA_TOPIC_CAMERA
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: TOTAL_INSTANCES
+              value: "3"  # Must match replicas count
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Extract ordinal from pod name (city-simulator-0 -> 0)
+              ORDINAL=${POD_NAME##*-}
+              export INSTANCE_ID=$ORDINAL
+              echo "Starting instance $INSTANCE_ID of $TOTAL_INSTANCES"
+              python city_simulator.py
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "256Mi"
               cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Polyline, Popup } from 'react-leaflet';
 import type { Edge } from '../../types';
+import { CongestionLevel } from '../../types';
 
 interface RoadSegmentLayerProps {
   edges: Edge[];
@@ -8,18 +9,24 @@ interface RoadSegmentLayerProps {
 
 const getCongestionColor = (congestionLevel: string): string => {
   const colors: Record<string, string> = {
-    light: '#4CAF50',      // Green
-    moderate: '#FFC107',   // Yellow/Orange
-    heavy: '#F44336',      // Red
+    [CongestionLevel.LOW]: '#4CAF50',      // Green
+    light: '#4CAF50',                       // Alias for backwards compatibility
+    [CongestionLevel.MODERATE]: '#FFC107', // Yellow/Orange
+    [CongestionLevel.HIGH]: '#F44336',     // Red
+    heavy: '#F44336',                       // Alias for backwards compatibility
+    [CongestionLevel.SEVERE]: '#8B0000',   // Dark Red
   };
   return colors[congestionLevel.toLowerCase()] || '#9E9E9E';
 };
 
 const getCongestionWidth = (congestionLevel: string): number => {
   const widths: Record<string, number> = {
-    light: 3,
-    moderate: 5,
-    heavy: 7,
+    [CongestionLevel.LOW]: 3,
+    light: 3,                              // Alias for backwards compatibility
+    [CongestionLevel.MODERATE]: 5,
+    [CongestionLevel.HIGH]: 7,
+    heavy: 7,                              // Alias for backwards compatibility
+    [CongestionLevel.SEVERE]: 9,
   };
   return widths[congestionLevel.toLowerCase()] || 3;
 };
@@ -53,9 +60,10 @@ export const RoadSegmentLayer = React.memo(function RoadSegmentLayer({ edges }: 
                     className={`
                       px-2 py-0.5 rounded-full text-xs font-medium
                       ${
+                        edge.trafficConditions.congestionLevel === CongestionLevel.LOW ||
                         edge.trafficConditions.congestionLevel === 'light'
                           ? 'bg-green-100 text-green-800'
-                          : edge.trafficConditions.congestionLevel === 'moderate'
+                          : edge.trafficConditions.congestionLevel === CongestionLevel.MODERATE
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }

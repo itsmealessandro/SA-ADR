@@ -3,6 +3,7 @@ import * as jsondiffpatch from 'jsondiffpatch';
 import { io, Socket } from 'socket.io-client';
 import { config } from '../config';
 import type { CityState, StateUpdate, WebSocketMessage } from '../types';
+import { WebSocketMessageType } from '../types';
 
 type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -115,7 +116,7 @@ export class WebSocketService {
     this.socket.on('initial-state', (initialState: CityState) => {
       console.log('Received initial state');
       const message: WebSocketMessage = {
-        type: 'full_state',
+        type: WebSocketMessageType.FULL_STATE,
         state: initialState,
         timestamp: new Date().toISOString(),
       };
@@ -132,7 +133,7 @@ export class WebSocketService {
       
       // Also notify message handlers
       const message: WebSocketMessage = {
-        type: 'incremental_update',
+        type: WebSocketMessageType.INCREMENTAL_UPDATE,
         patch: delta,
         timestamp: new Date().toISOString(),
       };
@@ -142,7 +143,7 @@ export class WebSocketService {
     this.socket.on('district-update', (district: unknown) => {
       console.log('Received district update');
       const message: WebSocketMessage = {
-        type: 'district_update',
+        type: WebSocketMessageType.DISTRICT_UPDATE,
         data: district,
         timestamp: new Date().toISOString(),
       };

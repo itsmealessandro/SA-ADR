@@ -39,6 +39,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
 
   /state:
     get:
@@ -54,12 +60,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CityStateResponse'
-        '404':
-          description: No state available
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
           content:
@@ -81,14 +81,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DistrictsResponse'
-        '404':
-          description: No state available
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /state/districts/{id}:
+  /state/districts/{districtId}:
     get:
       tags:
         - State
@@ -96,13 +96,13 @@ paths:
       description: Retrieve a specific district by its ID
       operationId: getDistrictById
       parameters:
-        - name: id
+        - name: districtId
           in: path
           required: true
           description: District identifier
           schema:
             type: string
-            example: district-1
+            example: district-roio
       responses:
         '200':
           description: District retrieved successfully
@@ -112,6 +112,123 @@ paths:
                 $ref: '#/components/schemas/DistrictResponse'
         '404':
           description: District not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts/{districtId}/sensors:
+    get:
+      tags:
+        - State
+      summary: Get district sensors
+      description: Retrieve all sensors for a specific district
+      operationId: getDistrictSensors
+      parameters:
+        - name: districtId
+          in: path
+          required: true
+          description: District identifier
+          schema:
+            type: string
+            example: district-roio
+      responses:
+        '200':
+          description: Sensors retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sensor'
+        '404':
+          description: District not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts/{districtId}/buildings:
+    get:
+      tags:
+        - State
+      summary: Get district buildings
+      description: Retrieve all buildings for a specific district
+      operationId: getDistrictBuildings
+      parameters:
+        - name: districtId
+          in: path
+          required: true
+          description: District identifier
+          schema:
+            type: string
+            example: district-roio
+      responses:
+        '200':
+          description: Buildings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Building'
+        '404':
+          description: District not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /state/districts/{districtId}/weather:
+    get:
+      tags:
+        - State
+      summary: Get district weather stations
+      description: Retrieve all weather stations for a specific district
+      operationId: getDistrictWeather
+      parameters:
+        - name: districtId
+          in: path
+          required: true
+          description: District identifier
+          schema:
+            type: string
+            example: district-roio
+      responses:
+        # '200':
+        #   description: Weather stations retrieved successfully
+        #   content:
+        #     application/json:
+        #       schema:
+        #         type: array
+        #         items:
+        #           $ref: '#/components/schemas/WeatherStation'
+        '404':
+          description: District not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -131,92 +248,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GraphResponse'
-        '404':
-          description: No state available
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /state/buildings:
+  /state/vehicles:
     get:
       tags:
         - State
-      summary: Get all buildings
-      description: Retrieve all buildings in the city
-      operationId: getBuildings
+      summary: Get all vehicles
+      description: Retrieve all vehicles data including ambulances, fire trucks, police vehicles, and other monitored vehicles
+      operationId: getVehicles
       responses:
-        '200':
-          description: Buildings retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BuildingsResponse'
-        '404':
-          description: No state available
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /state/sensors:
-    get:
-      tags:
-        - State
-      summary: Get all sensors
-      description: Retrieve all sensors in the city
-      operationId: getSensors
-      responses:
-        '200':
-          description: Sensors retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SensorsResponse'
-        '404':
-          description: No state available
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /state/public-transport:
-    get:
-      tags:
-        - State
-      summary: Get public transport data
-      description: Retrieve public transport information including buses and status
-      operationId: getPublicTransport
-      responses:
-        '200':
-          description: Transport data retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublicTransportResponse'
-        '404':
-          description: No state available
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /state/emergency-services:
-    get:
-      tags:
-        - State
-      summary: Get emergency services data
-      description: Retrieve emergency services information including vehicles and incidents
-      operationId: getEmergencyServices
-      responses:
-        '200':
-          description: Emergency data retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EmergencyServicesResponse'
-        '404':
-          description: No state available
+        # '200':
+        #   description: Vehicles retrieved successfully
+        #   content:
+        #     application/json:
+        #       schema:
+        #         type: array
+        #         items:
+        #           $ref: '#/components/schemas/Vehicle'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -291,11 +347,23 @@ components:
       properties:
         status:
           type: string
-          example: ok
+          enum: [healthy, unhealthy]
+          example: healthy
         timestamp:
           type: string
           format: date-time
-          example: '2024-12-08T10:30:00.000Z'
+          example: "2024-12-08T10:30:00.000Z"
+        services:
+          type: object
+          properties:
+            redis:
+              type: string
+              enum: [connected, disconnected]
+              example: connected
+            mongodb:
+              type: string
+              enum: [connected, disconnected]
+              example: connected
 
     CityStateResponse:
       type: object
