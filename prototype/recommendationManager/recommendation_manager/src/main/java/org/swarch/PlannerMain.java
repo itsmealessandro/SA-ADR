@@ -120,6 +120,42 @@ public class PlannerMain {
   }
 
   /**
+   * Sends a periodic test notification to Kafka every 5 seconds.
+   *
+   * This method simulates sending notifications with the same structure
+   * as when executing a plan, for testing purposes.
+   */
+  @Scheduled(every = "5s")
+  void sendPeriodicTestNotification() {
+    System.out.println("########################################");
+    System.out.println("Sending periodic test notification...");
+
+    try {
+      NotificationMessage notification = new NotificationMessage(
+          "Periodic Test Notification - System Status OK",
+          "LOW", // severity
+          "Recommendation Manager (TEST)", // source
+          System.currentTimeMillis() // timestamp
+      );
+
+      String jsonMessage = objectMapper.writeValueAsString(notification);
+
+      ProducerRecord<String, String> record = new ProducerRecord<>(notificationTopic, jsonMessage);
+
+      producer.send(record, (metadata, exception) -> {
+        if (exception != null) {
+          System.err.println("Send Error: " + exception.getMessage());
+        } else {
+          System.out.println("Periodic test notification sent to topic " + metadata.topic());
+        }
+      });
+
+    } catch (Exception e) {
+      System.err.println("Error serializing test notification: " + e.getMessage());
+    }
+  }
+
+  /**
    * Executes the strategy associated with the selected plan.
    *
    * This method delegates the execution logic to the

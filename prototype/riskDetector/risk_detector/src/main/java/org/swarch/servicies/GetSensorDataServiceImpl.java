@@ -62,6 +62,7 @@ public class GetSensorDataServiceImpl implements GetSensorDataService {
     for (Map.Entry<String, Object> entry : allData.entrySet()) {
       System.out.println(entry.getKey() + ": " + entry.getValue());
     }
+    System.out.println("End extracted data");
     System.out.println("########################################");
 
     return allData;

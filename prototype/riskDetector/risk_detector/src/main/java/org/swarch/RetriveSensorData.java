@@ -48,7 +48,7 @@ public class RetriveSensorData {
     System.out.println("Kafka producer initialized for symptoms topic: " + symptomsTopic);
   }
 
-  @Scheduled(every = "10s")
+  @Scheduled(every = "3s")
   public void retriveData() {
     LOG.info("Starting periodic data extraction and symptom check");
 
@@ -98,6 +98,37 @@ public class RetriveSensorData {
       }
     } catch (Exception e) {
       System.err.println("Error sending symptom: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Sends a periodic test symptom to Kafka every 10 seconds.
+   *
+   * This method simulates sending a test symptom with the same structure
+   * as when detecting real symptoms, for testing purposes.
+   */
+  @Scheduled(every = "10s")
+  void sendPeriodicTestSymptom() {
+    System.err.println("#################################################");
+    System.err.println("Sending periodic test symptom...");
+
+    try {
+      // Simulate a test symptom (e.g., TRAFFIC_JAM severity)
+      Symptom testSymptom = Symptom.TRAFFIC_JAM; // Using a valid enum value
+      String jsonMessage = objectMapper.writeValueAsString(Map.of("severity", testSymptom.name()));
+
+      ProducerRecord<String, String> record = new ProducerRecord<>(symptomsTopic, testSymptom.name(), jsonMessage);
+
+      producer.send(record, (metadata, exception) -> {
+        if (exception != null) {
+          System.err.println("Send Error: " + exception.getMessage());
+        } else {
+          System.err.println("Periodic test symptom sent to topic " + metadata.topic());
+        }
+      });
+
+    } catch (Exception e) {
+      System.err.println("Error serializing test symptom: " + e.getMessage());
     }
   }
 
